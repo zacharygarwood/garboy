@@ -85,3 +85,7 @@ func (r *Register16) Read() uint16 {
 func (r *Register16) Write(val uint16) {
 	r.val = val
 }
+
+func (r *Register16) Increment() {
+	r.val++
+}
