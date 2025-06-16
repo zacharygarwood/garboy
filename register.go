@@ -70,18 +70,18 @@ func NewRegisters() *Registers {
 	}
 }
 
-func (r Register8) read() uint8 {
+func (r Register8) Read() uint8 {
 	return r.val
 }
 
-func (r *Register8) write(val uint8) {
+func (r *Register8) Write(val uint8) {
 	r.val = val
 }
 
-func (r *Register16) read() uint16 {
+func (r *Register16) Read() uint16 {
 	return r.val
 }
 
-func (r *Register16) write(val uint16) {
+func (r *Register16) Write(val uint16) {
 	r.val = val
 }
