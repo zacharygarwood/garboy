@@ -274,3 +274,48 @@ func (c *CPU) di() {
 func (c *CPU) ei() {
 	// TODO
 }
+
+// 0xCB Prefixed instructions
+func (c *CPU) rlc_r8(operand Register8) {
+	// TODO
+}
+
+func (c *CPU) rrc_r8(operand Register8) {
+	// TODO
+}
+
+func (c *CPU) rl_r8(operand Register8) {
+	// TODO
+}
+
+func (c *CPU) rr_r8(operand Register8) {
+	// TODO
+}
+
+func (c *CPU) sla_r8(operand Register8) {
+	// TODO
+}
+
+func (c *CPU) sra_r8(operand Register8) {
+	// TODO
+}
+
+func (c *CPU) swap_r8(operand Register8) {
+	// TODO
+}
+
+func (c *CPU) srl_r8(operand Register8) {
+	// TODO
+}
+
+func (c *CPU) bit_b3_r8(bitIndex uint16, operand Register8) {
+	// TODO
+}
+
+func (c *CPU) res_b3_r8(bitIndex uint16, operand Register8) {
+	// TODO
+}
+
+func (c *CPU) set_b3_r8(bitIndex uint16, operand Register8) {
+	// TODO
+}
