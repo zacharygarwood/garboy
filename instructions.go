@@ -41,7 +41,7 @@ var INSTRUCTIONS []Instruction = []Instruction{
 	{0x0d, "DEC C", 1, NewCycles(4, 4), (*CPU).dec_r8},
 	{0x0e, "LD C, u8", 2, NewCycles(8, 8), (*CPU).ld_r8_imm8},
 	{0x0f, "RRCA", 1, NewCycles(4, 4), (*CPU).rrca},
-	{0x10, "STOP 0", 1, NewCycles(4, 4), (*CPU).stop},
+	{0x10, "STOP", 1, NewCycles(4, 4), (*CPU).stop},
 	{0x11, "LD DE, u16", 3, NewCycles(12, 12), (*CPU).ld_r16_imm16},
 	{0x12, "LD (DE), A", 1, NewCycles(8, 8), (*CPU).ld_r16mem_a},
 	{0x13, "INC DE", 1, NewCycles(8, 8), (*CPU).inc_r16},
@@ -798,7 +798,7 @@ func (c *CPU) ei() {
 	// TODO
 }
 
-// 0x Prefixed instructions
+// 0xCB Prefixed instructions
 func (c *CPU) rlc_r8() {
 	// TODO
 }
