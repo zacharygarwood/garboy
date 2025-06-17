@@ -8,9 +8,7 @@ func main() {
 	cpu := NewCPU(cartridge, ppu)
 
 	for range 256 {
-		if !cpu.Step() {
-			return
-		}
+		cpu.Step()
 	}
 
 	fmt.Printf("Boot ROM implemented!")

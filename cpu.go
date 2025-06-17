@@ -1,10 +1,10 @@
 package main
 
-import "fmt"
-
 type CPU struct {
 	reg Registers
 	mmu MMU
+
+	instr Instruction
 }
 
 func NewCPU(cartridge *Cartridge, ppu *PPU) *CPU {
@@ -14,9 +14,10 @@ func NewCPU(cartridge *Cartridge, ppu *PPU) *CPU {
 	}
 }
 
-func (c *CPU) Step() bool {
+func (c *CPU) Step() {
 	opcode := c.fetch()
-	return c.decodeAndExecute(opcode)
+	c.decode(opcode)
+	c.execute()
 }
 
 // Fetches the opcode at PC and increments the PC forward one
@@ -26,13 +27,12 @@ func (c *CPU) fetch() byte {
 	return opcode
 }
 
-func (c *CPU) decodeAndExecute(opcode uint8) bool {
-	switch opcode {
-	default:
-		fmt.Printf("Unknown opcode: %#2x\n", opcode)
-		fmt.Printf("cpu.PC=0x%04x\n", c.reg.pc)
-		fmt.Printf("cpu.SP=0x%04x\n", c.reg.sp)
-		return false
-	}
-	return true
+// Decodes the opcode and stores the current instruction
+func (c *CPU) decode(opcode byte) {
+	c.instr = INSTRUCTIONS[opcode]
+}
+
+// Executes the current instruction
+func (c *CPU) execute() {
+	c.instr.Execute(c)
 }
