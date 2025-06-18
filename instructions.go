@@ -540,6 +540,10 @@ var CB_INSTRUCTIONS []Instruction = []Instruction{
 	{0xff, "SET 7, A", 2, NewCycles(8, 8), (*CPU).set_b3_r8},
 }
 
+func (c *CPU) getImm8() uint8 {
+
+}
+
 func (c *CPU) invalid_instruction() {
 	log.Fatal("Calling invalid instruction")
 }
@@ -550,7 +554,7 @@ func (c *CPU) nop() {
 }
 
 func (c *CPU) ld_r16_imm16() {
-	// TODO
+
 }
 
 func (c *CPU) ld_r16mem_a() {
