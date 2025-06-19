@@ -33,5 +33,5 @@ func (c *CPU) decode(opcode byte) Instruction {
 
 // Executes the current instruction
 func (c *CPU) execute(instr Instruction) {
-	instr.Execute(c)
+	instr.Execute(&instr, c)
 }
