@@ -819,7 +819,14 @@ func (i *Instruction) or_a_imm8(c *CPU) {
 }
 
 func (i *Instruction) cp_a_imm8(c *CPU) {
-	// TODO
+	a := c.reg.a.Read()
+	imm8 := c.getImm8()
+	res := a - imm8
+
+	c.reg.f.SetZ(res == 0)
+	c.reg.f.SetN(true)
+	c.reg.f.SetH(IsHalfBorrow8(a, imm8))
+	c.reg.f.SetC(imm8 > a)
 }
 
 func (i *Instruction) ret_cond(c *CPU) {
