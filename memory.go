@@ -77,3 +77,18 @@ func (i *InterruptRegister) Read(offset uint16) byte {
 func (i *InterruptRegister) Write(offset uint16, val byte) {
 	i.val = val
 }
+
+// Not the greatest, but I had to add this so that the byte in memory returned by cpu.byteAt() would be treated as a Register8
+// Ex: INC (HL) calls inc_r8 which takes Register8. Called like inc_r8(c.byteAt(c.reg.hl.Read()))
+type MemoryReference8 struct {
+	cpu  *CPU
+	addr uint16
+}
+
+func (m *MemoryReference8) Read() uint8 {
+	return m.cpu.mmu.Read(m.addr)
+}
+
+func (m *MemoryReference8) Write(val uint8) {
+	m.cpu.mmu.Write(m.addr, val)
+}

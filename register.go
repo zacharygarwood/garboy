@@ -9,6 +9,7 @@ type Register16 interface {
 	Read() uint16
 	Write(uint16)
 	Increment()
+	Decrement()
 }
 
 type Registers struct {
@@ -17,9 +18,10 @@ type Registers struct {
 	c Register8
 	d Register8
 	e Register8
-	f Register8 // Stores flags, not a real register
 	h Register8
 	l Register8
+
+	f *FlagRegister // Stores flags, not a real register
 
 	af Register16
 	bc Register16
@@ -43,13 +45,17 @@ type CombinedRegister16 struct {
 	lo Register8
 }
 
+type FlagRegister struct {
+	val uint8 // Only top four bits matter so operations use masks
+}
+
 func NewRegisters() *Registers {
 	a := &SingleRegister8{}
 	b := &SingleRegister8{}
 	c := &SingleRegister8{}
 	d := &SingleRegister8{}
 	e := &SingleRegister8{}
-	f := &SingleRegister8{}
+	f := &FlagRegister{}
 	h := &SingleRegister8{}
 	l := &SingleRegister8{}
 
@@ -101,6 +107,10 @@ func (r *SingleRegister16) Increment() {
 	r.val++
 }
 
+func (r *SingleRegister16) Decrement() {
+	r.val--
+}
+
 func (r *CombinedRegister16) Read() uint16 {
 	return (uint16(r.hi.Read()) << 8) | uint16(r.lo.Read())
 }
@@ -111,5 +121,65 @@ func (r *CombinedRegister16) Write(val uint16) {
 }
 
 func (r *CombinedRegister16) Increment() {
-	r.Write(1)
+	r.Write(r.Read() + 1)
+}
+
+func (r *CombinedRegister16) Decrement() {
+	r.Write(r.Read() - 1)
+}
+
+func (f *FlagRegister) Read() uint8 {
+	return f.val & 0xF0
+}
+
+func (f *FlagRegister) Write(val uint8) {
+	f.val = val & 0xF0
+}
+
+func (f *FlagRegister) Z() bool {
+	return f.val&(1<<7) != 0
+}
+
+func (f *FlagRegister) N() bool {
+	return f.val&(1<<6) != 0
+}
+
+func (f *FlagRegister) H() bool {
+	return f.val&(1<<5) != 0
+}
+
+func (f *FlagRegister) C() bool {
+	return f.val&(1<<4) != 0
+}
+
+func (f *FlagRegister) SetZ(val bool) {
+	if val {
+		f.val |= 1 << 7
+	} else {
+		f.val &^= 1 << 7
+	}
+}
+
+func (f *FlagRegister) SetN(val bool) {
+	if val {
+		f.val |= 1 << 6
+	} else {
+		f.val &^= 1 << 6
+	}
+}
+
+func (f *FlagRegister) SetH(val bool) {
+	if val {
+		f.val |= 1 << 5
+	} else {
+		f.val &^= 1 << 5
+	}
+}
+
+func (f *FlagRegister) SetC(val bool) {
+	if val {
+		f.val |= 1 << 4
+	} else {
+		f.val &^= 1 << 4
+	}
 }

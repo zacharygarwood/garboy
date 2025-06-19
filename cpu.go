@@ -3,8 +3,6 @@ package main
 type CPU struct {
 	reg Registers
 	mmu MMU
-
-	instr Instruction
 }
 
 func NewCPU(cartridge *Cartridge, ppu *PPU) *CPU {
@@ -16,8 +14,8 @@ func NewCPU(cartridge *Cartridge, ppu *PPU) *CPU {
 
 func (c *CPU) Step() {
 	opcode := c.fetch()
-	c.decode(opcode)
-	c.execute()
+	instruction := c.decode(opcode)
+	c.execute(instruction)
 }
 
 // Fetches the opcode at PC and increments the PC forward one
@@ -28,28 +26,12 @@ func (c *CPU) fetch() byte {
 }
 
 // Decodes the opcode and stores the current instruction
-func (c *CPU) decode(opcode byte) {
+func (c *CPU) decode(opcode byte) Instruction {
 	// TODO: Add 0xCB prefix check here to use CB_INSTRUCTIONS
-	c.instr = INSTRUCTIONS[opcode]
+	return INSTRUCTIONS[opcode]
 }
 
 // Executes the current instruction
-func (c *CPU) execute() {
-	c.instr.Execute(c)
-}
-
-// Gets the r16 to use given an index
-func (c *CPU) getRegister16(index uint8) Register16 {
-	switch index {
-	case 0:
-		return c.reg.bc
-	case 1:
-		return c.reg.de
-	case 2:
-		return c.reg.hl
-	case 3:
-		return c.reg.sp
-	default:
-		panic("Invalid index passed to GetRegister16")
-	}
+func (c *CPU) execute(instr Instruction) {
+	instr.Execute(c)
 }

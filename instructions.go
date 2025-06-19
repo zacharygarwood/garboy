@@ -541,7 +541,115 @@ var CB_INSTRUCTIONS []Instruction = []Instruction{
 }
 
 func (c *CPU) getImm8() uint8 {
+	imm := c.mmu.Read(c.reg.pc.Read())
+	c.reg.pc.Increment()
+	return imm
+}
 
+func (c *CPU) getImm16() uint16 {
+	lsb := uint16(c.getImm8())
+	msb := uint16(c.getImm8())
+	return (msb << 8) | lsb
+}
+
+// MemoryReference8 conforms to the Register8 interface
+func (c *CPU) byteAt(addr uint16) *MemoryReference8 {
+	return &MemoryReference8{
+		cpu:  c,
+		addr: addr,
+	}
+}
+
+func (c *CPU) getRegister8(opcode byte, bits []int) Register8 {
+	index := ExtractBits(opcode, bits)
+	switch index {
+	case 0:
+		return c.reg.b
+	case 1:
+		return c.reg.c
+	case 2:
+		return c.reg.d
+	case 3:
+		return c.reg.e
+	case 4:
+		return c.reg.h
+	case 5:
+		return c.reg.l
+	case 6:
+		return c.byteAt(c.reg.hl.Read())
+	case 7:
+		return c.reg.a
+	default:
+		panic("Invalid index passed to getRegister8()")
+	}
+}
+
+func (c *CPU) getRegister16(opcode byte, bits []int) Register16 {
+	index := ExtractBits(opcode, bits)
+	switch index {
+	case 0:
+		return c.reg.bc
+	case 1:
+		return c.reg.de
+	case 2:
+		return c.reg.hl
+	case 3:
+		return c.reg.sp
+	default:
+		panic("Invalid index passed to getRegister16()")
+	}
+}
+
+func (c *CPU) getRegister16Stk(opcode byte, bits []int) Register16 {
+	index := ExtractBits(opcode, bits)
+	switch index {
+	case 0:
+		return c.reg.bc
+	case 1:
+		return c.reg.de
+	case 2:
+		return c.reg.hl
+	case 3:
+		return c.reg.af
+	default:
+		panic("Invalid index passed to getRegister16Stk()")
+	}
+}
+
+func (c *CPU) getRegister16Mem(opcode byte, bits []int) *MemoryReference8 {
+	index := ExtractBits(opcode, bits)
+	switch index {
+	case 0:
+		return c.byteAt(c.reg.bc.Read())
+	case 1:
+		return c.byteAt(c.reg.de.Read())
+	case 2:
+		hl := c.byteAt(c.reg.hl.Read())
+		c.reg.hl.Increment()
+		return hl
+	case 3:
+		hl := c.byteAt(c.reg.hl.Read())
+		c.reg.hl.Decrement()
+		return hl
+	default:
+		panic("Invalid index passed to getRegister16Mem()")
+	}
+}
+
+func (c *CPU) getCond(opcode byte, bits []int) bool {
+	index := ExtractBits(opcode, bits)
+	switch index {
+	case 0:
+		return !c.reg.f.Z()
+	case 1:
+		return c.reg.f.Z()
+	case 2:
+		return !c.reg.f.C()
+	case 3:
+		return c.reg.f.C()
+	default:
+		panic("Invalid index passed to getCond()")
+	}
 }
 
 func (c *CPU) invalid_instruction() {
