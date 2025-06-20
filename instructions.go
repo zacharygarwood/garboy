@@ -1156,56 +1156,104 @@ func (i *Instruction) rst_tgt3(c *CPU) {
 }
 
 func (i *Instruction) pop_r16stk(c *CPU) {
-	// TODO
+	r16Stk := c.getRegister16Stk(i.Opcode, []int{5, 4})
+	sp := c.reg.sp.Read()
+
+	spMem := c.mmu.ReadWord(sp)
+	c.reg.sp.Write(sp + 2)
+	r16Stk.Write(spMem)
 }
 
 func (i *Instruction) push_r16stk(c *CPU) {
-	// TODO
+	r16Stk := c.getRegister16Stk(i.Opcode, []int{5, 4})
+	sp := c.reg.sp.Read()
+
+	c.mmu.WriteWord(sp-2, r16Stk.Read())
+	c.reg.sp.Write(sp - 2)
 }
 
 func (i *Instruction) ldh_c_a(c *CPU) {
-	// TODO
+	cMem := c.byteAt(0xFF00 + uint16(c.reg.c.Read()))
+	a := c.reg.a.Read()
+
+	cMem.Write(a)
 }
 
 func (i *Instruction) ldh_imm8_a(c *CPU) {
-	// TODO
+	imm8 := c.getImm8()
+	imm8Mem := c.byteAt(0xFF00 + uint16(imm8))
+	a := c.reg.a.Read()
+
+	imm8Mem.Write(a)
 }
 
 func (i *Instruction) ld_imm16_a(c *CPU) {
-	// TODO
+	imm16 := c.getImm16()
+	imm16Mem := c.byteAt(imm16)
+	a := c.reg.a.Read()
+
+	imm16Mem.Write(a)
 }
 
 func (i *Instruction) ldh_a_c(c *CPU) {
-	// TODO
+	cMem := c.byteAt(0xFF00 + uint16(c.reg.c.Read()))
+
+	c.reg.a.Write(cMem.Read())
 }
 
 func (i *Instruction) ldh_a_imm8(c *CPU) {
-	// TODO
+	imm8 := c.getImm8()
+	imm8Mem := c.byteAt(0xFF00 + uint16(imm8))
+
+	c.reg.a.Write(imm8Mem.Read())
 }
 
 func (i *Instruction) ld_a_imm16(c *CPU) {
-	// TODO
+	imm16 := c.getImm16()
+	imm16Mem := c.byteAt(imm16)
+
+	c.reg.a.Write(imm16Mem.Read())
 }
 
 func (i *Instruction) add_sp_imm8(c *CPU) {
-	// TODO
+	imm8 := c.getImm8()
+	sp := c.reg.sp.Read()
+
+	res := uint16(int(sp) + int(imm8))
+	c.reg.sp.Write(res)
+
+	c.reg.f.SetZ(false)
+	c.reg.f.SetN(false)
+	c.reg.f.SetH(IsHalfCarry8(uint8(sp&0xFF), imm8))
+	c.reg.f.SetC(uint8(res&0xFF) < uint8(sp&0xFF))
 }
 
 // ld hl, sp + imm8
 func (i *Instruction) ld_hl_sp_plus_imm8(c *CPU) {
-	// TODO
+	imm8 := c.getImm8()
+	sp := c.reg.sp.Read()
+
+	res := uint16(int(sp) + int(imm8))
+	c.reg.hl.Write(res)
+
+	c.reg.f.SetZ(false)
+	c.reg.f.SetN(false)
+	c.reg.f.SetH(IsHalfCarry8(uint8(sp&0xFF), imm8))
+	c.reg.f.SetC(uint8(res&0xFF) < uint8(sp&0xFF))
 }
 
 func (i *Instruction) ld_sp_hl(c *CPU) {
-	// TODO
+	hl := c.reg.hl.Read()
+
+	c.reg.sp.Write(hl)
 }
 
 func (i *Instruction) di(c *CPU) {
-	// TODO
+	c.IME = false
 }
 
 func (i *Instruction) ei(c *CPU) {
-	// TODO
+	c.IME = true
 }
 
 // 0xCB Prefixed instructions
