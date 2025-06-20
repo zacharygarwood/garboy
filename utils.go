@@ -67,3 +67,38 @@ func RotateLeftThroughCarry(val uint8, carry bool) (uint8, bool) {
 	newCarry := msb
 	return result, newCarry
 }
+
+func ShiftLeftArithmetic(val uint8) (uint8, bool) {
+	carry := (val & 0x80) != 0
+	result := val << 1
+	return result, carry
+}
+
+func ShiftRightArithmetic(val uint8) (uint8, bool) {
+	carry := (val & 0x01) != 0
+	result := (val >> 1) | (val & 0x80)
+	return result, carry
+}
+
+func ShiftRightLogic(val uint8) (uint8, bool) {
+	carry := (val & 0x01) != 0
+	result := val >> 1
+	return result, carry
+}
+
+// Swaps hi and lo bits. Ex: hi-lo becomes lo-hi
+func Swap(val uint8) uint8 {
+	return (val >> 4) + ((val & 0xF) << 4)
+}
+
+func IsBitSet(val uint8, bit uint8) bool {
+	return (val & (1 << bit)) != 0
+}
+
+func ResetBit(val uint8, bit uint8) uint8 {
+	return val & ^(1 << bit)
+}
+
+func SetBit(val uint8, bit uint8) uint8 {
+	return val | (1 << bit)
+}

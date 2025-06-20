@@ -1258,45 +1258,122 @@ func (i *Instruction) ei(c *CPU) {
 
 // 0xCB Prefixed instructions
 func (i *Instruction) rlc_r8(c *CPU) {
-	// TODO
+	r8 := c.getRegister8(i.Opcode, []int{2, 1, 0})
+
+	res, carry := RotateLeft(r8.Read())
+	r8.Write(res)
+
+	c.reg.f.SetZ(res == 0)
+	c.reg.f.SetN(false)
+	c.reg.f.SetH(false)
+	c.reg.f.SetC(carry)
 }
 
 func (i *Instruction) rrc_r8(c *CPU) {
-	// TODO
+	r8 := c.getRegister8(i.Opcode, []int{2, 1, 0})
+
+	res, carry := RotateRight(r8.Read())
+	r8.Write(res)
+
+	c.reg.f.SetZ(res == 0)
+	c.reg.f.SetN(false)
+	c.reg.f.SetH(false)
+	c.reg.f.SetC(carry)
 }
 
 func (i *Instruction) rl_r8(c *CPU) {
-	// TODO
+	r8 := c.getRegister8(i.Opcode, []int{2, 1, 0})
+
+	res, carry := RotateLeftThroughCarry(r8.Read(), c.reg.f.C())
+	r8.Write(res)
+
+	c.reg.f.SetZ(res == 0)
+	c.reg.f.SetN(false)
+	c.reg.f.SetH(false)
+	c.reg.f.SetC(carry)
 }
 
 func (i *Instruction) rr_r8(c *CPU) {
-	// TODO
+	r8 := c.getRegister8(i.Opcode, []int{2, 1, 0})
+
+	res, carry := RotateRightThroughCarry(r8.Read(), c.reg.f.C())
+	r8.Write(res)
+
+	c.reg.f.SetZ(res == 0)
+	c.reg.f.SetN(false)
+	c.reg.f.SetH(false)
+	c.reg.f.SetC(carry)
 }
 
 func (i *Instruction) sla_r8(c *CPU) {
-	// TODO
+	r8 := c.getRegister8(i.Opcode, []int{2, 1, 0})
+
+	res, carry := ShiftLeftArithmetic(r8.Read())
+	r8.Write(res)
+
+	c.reg.f.SetZ(res == 0)
+	c.reg.f.SetN(false)
+	c.reg.f.SetH(false)
+	c.reg.f.SetC(carry)
 }
 
 func (i *Instruction) sra_r8(c *CPU) {
-	// TODO
+	r8 := c.getRegister8(i.Opcode, []int{2, 1, 0})
+
+	res, carry := ShiftRightArithmetic(r8.Read())
+	r8.Write(res)
+
+	c.reg.f.SetZ(res == 0)
+	c.reg.f.SetN(false)
+	c.reg.f.SetH(false)
+	c.reg.f.SetC(carry)
 }
 
 func (i *Instruction) swap_r8(c *CPU) {
-	// TODO
+	r8 := c.getRegister8(i.Opcode, []int{2, 1, 0})
+
+	res := Swap(r8.Read())
+	r8.Write(res)
+
+	c.reg.f.SetZ(res == 0)
+	c.reg.f.SetN(false)
+	c.reg.f.SetH(false)
+	c.reg.f.SetC(false)
 }
 
 func (i *Instruction) srl_r8(c *CPU) {
-	// TODO
+	r8 := c.getRegister8(i.Opcode, []int{2, 1, 0})
+
+	res, carry := ShiftRightLogic(r8.Read())
+	r8.Write(res)
+
+	c.reg.f.SetZ(res == 0)
+	c.reg.f.SetN(false)
+	c.reg.f.SetH(false)
+	c.reg.f.SetC(carry)
 }
 
 func (i *Instruction) bit_b3_r8(c *CPU) {
-	// TODO
+	b3 := ExtractBits(i.Opcode, []int{5, 4, 3})
+	r8 := c.getRegister8(i.Opcode, []int{2, 1, 0})
+
+	c.reg.f.SetZ(!IsBitSet(r8.Read(), b3))
+	c.reg.f.SetN(false)
+	c.reg.f.SetH(true)
 }
 
 func (i *Instruction) res_b3_r8(c *CPU) {
-	// TODO
+	b3 := ExtractBits(i.Opcode, []int{5, 4, 3})
+	r8 := c.getRegister8(i.Opcode, []int{2, 1, 0})
+
+	res := ResetBit(r8.Read(), b3)
+	r8.Write(res)
 }
 
 func (i *Instruction) set_b3_r8(c *CPU) {
-	// TODO
+	b3 := ExtractBits(i.Opcode, []int{5, 4, 3})
+	r8 := c.getRegister8(i.Opcode, []int{2, 1, 0})
+
+	res := SetBit(r8.Read(), b3)
+	r8.Write(res)
 }
