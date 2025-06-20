@@ -3,6 +3,8 @@ package main
 type CPU struct {
 	reg *Registers
 	mmu *MMU
+
+	halted bool
 }
 
 func NewCPU(cartridge *Cartridge, ppu *PPU) *CPU {

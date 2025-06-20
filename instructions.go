@@ -653,7 +653,7 @@ func (c *CPU) getCond(opcode byte, bits []int) bool {
 }
 
 func (c *Instruction) invalid_instruction() {
-	log.Fatal("Calling invalid instruction")
+	panic("Calling invalid instruction")
 }
 
 // Block 0
@@ -788,54 +788,123 @@ func (i *Instruction) rra(c *CPU) {
 }
 
 func (i *Instruction) daa(c *CPU) {
-	// TODO
+	a := c.reg.a.Read()
+	adjustment := uint8(0)
+	subtract := c.reg.f.N()
+
+	if c.reg.f.H() || (!subtract && (a&0xF) > 0x9) {
+		adjustment |= 0x06
+	}
+	if c.reg.f.C() || (!subtract && a > 0x99) {
+		adjustment |= 0x60
+		c.reg.f.SetC(true)
+	}
+
+	res := a
+	if subtract {
+		res -= adjustment
+	} else {
+		res += adjustment
+	}
+	c.reg.a.Write(res)
+
+	c.reg.f.SetZ(res == 0)
+	c.reg.f.SetH(false)
 }
 
 func (i *Instruction) cpl(c *CPU) {
-	// TODO
+	a := c.reg.a.Read()
+
+	c.reg.a.Write(^a)
+
+	c.reg.f.SetN(true)
+	c.reg.f.SetH(true)
 }
 
 func (i *Instruction) scf(c *CPU) {
-	// TODO
+	c.reg.f.SetN(false)
+	c.reg.f.SetH(false)
+	c.reg.f.SetC(true)
 }
 
 func (i *Instruction) ccf(c *CPU) {
-	// TODO
+	c.reg.f.SetN(false)
+	c.reg.f.SetH(false)
+	c.reg.f.SetC(!c.reg.f.C())
 }
 
 func (i *Instruction) jr_imm8(c *CPU) {
-	// TODO
+	imm8 := int8(c.getImm8())
+	pc := c.reg.pc.Read()
+
+	res := uint16(int(pc) + int(imm8))
+	c.reg.pc.Write(res)
 }
 
 func (i *Instruction) jr_cond_imm8(c *CPU) {
-	// TODO
+	cond := c.getCond(i.Opcode, []int{4, 3})
+	imm8 := int8(c.getImm8())
+	pc := c.reg.pc.Read()
+
+	if cond {
+		res := uint16(int(pc) + int(imm8))
+		c.reg.pc.Write(res)
+	}
 }
 
-func (i *Instruction) stop(c *CPU) {
-	// TODO
-}
+func (i *Instruction) stop(c *CPU) {}
 
 // Block 1
 func (i *Instruction) ld_r8_r8(c *CPU) {
-	// TODO
-	// Exception: ld [hl] [hl] yields the halt instruction
+	dst := c.getRegister8(i.Opcode, []int{5, 4, 3})
+	src := c.getRegister8(i.Opcode, []int{2, 1, 0}).Read()
+
+	dst.Write(src)
 }
 
 func (i *Instruction) halt(c *CPU) {
-	// TODO
+	c.halted = true
 }
 
 // Block 2
 func (i *Instruction) add_a_r8(c *CPU) {
-	// TODO
+	a := c.reg.a.Read()
+	r8 := c.getRegister8(i.Opcode, []int{2, 1, 0}).Read()
+
+	res := a + r8
+	c.reg.a.Write(res)
+
+	c.reg.f.SetZ(res == 0)
+	c.reg.f.SetN(false)
+	c.reg.f.SetH(IsHalfCarry8(a, r8))
+	c.reg.f.SetC(res < a)
 }
 
 func (i *Instruction) adc_a_r8(c *CPU) {
-	// TODO
+	a := c.reg.a.Read()
+	r8 := c.getRegister8(i.Opcode, []int{2, 1, 0}).Read()
+	carry := AsUint8(c.reg.f.C())
+
+	res := a + r8 + carry
+	c.reg.a.Write(res)
+
+	c.reg.f.SetZ(res == 0)
+	c.reg.f.SetN(false)
+	c.reg.f.SetH(IsHalfCarry8(a, r8+carry))
+	c.reg.f.SetC(res < a)
 }
 
 func (i *Instruction) sub_a_r8(c *CPU) {
-	// TODO
+	a := c.reg.a.Read()
+	r8 := c.getRegister8(i.Opcode, []int{2, 1, 0}).Read()
+
+	res := a - r8
+	c.reg.a.Write(res)
+
+	c.reg.f.SetZ(res == 0)
+	c.reg.f.SetN(true)
+	c.reg.f.SetH(IsHalfBorrow8(a, r8))
+	c.reg.f.SetC(r8 > a)
 }
 
 func (i *Instruction) sbc_a_r8(c *CPU) {
@@ -853,7 +922,16 @@ func (i *Instruction) sbc_a_r8(c *CPU) {
 }
 
 func (i *Instruction) and_a_r8(c *CPU) {
-	// TODO
+	a := c.reg.a.Read()
+	r8 := c.getRegister8(i.Opcode, []int{2, 1, 0}).Read()
+
+	res := a & r8
+	c.reg.a.Write(res)
+
+	c.reg.f.SetZ(res == 0)
+	c.reg.f.SetN(false)
+	c.reg.f.SetH(true)
+	c.reg.f.SetC(false)
 }
 
 func (i *Instruction) xor_a_r8(c *CPU) {
@@ -870,11 +948,28 @@ func (i *Instruction) xor_a_r8(c *CPU) {
 }
 
 func (i *Instruction) or_a_r8(c *CPU) {
-	// TODO
+	a := c.reg.a.Read()
+	r8 := c.getRegister8(i.Opcode, []int{2, 1, 0}).Read()
+
+	res := a | r8
+	c.reg.a.Write(res)
+
+	c.reg.f.SetZ(res == 0)
+	c.reg.f.SetN(false)
+	c.reg.f.SetH(false)
+	c.reg.f.SetC(false)
 }
 
 func (i *Instruction) cp_a_r8(c *CPU) {
-	// TODO
+	a := c.reg.a.Read()
+	r8 := c.getRegister8(i.Opcode, []int{2, 1, 0}).Read()
+
+	res := a - r8
+
+	c.reg.f.SetZ(res == 0)
+	c.reg.f.SetN(true)
+	c.reg.f.SetH(IsHalfBorrow8(a, r8))
+	c.reg.f.SetC(r8 > a)
 }
 
 // Block 3
