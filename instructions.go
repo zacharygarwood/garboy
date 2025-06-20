@@ -652,7 +652,7 @@ func (c *CPU) getCond(opcode byte, bits []int) bool {
 	}
 }
 
-func (c *CPU) invalid_instruction() {
+func (c *Instruction) invalid_instruction() {
 	log.Fatal("Calling invalid instruction")
 }
 
@@ -667,55 +667,124 @@ func (i *Instruction) ld_r16_imm16(c *CPU) {
 }
 
 func (i *Instruction) ld_r16mem_a(c *CPU) {
-	// TODO
+	r16mem := c.getRegister16Mem(i.Opcode, []int{5, 4})
+	a := c.reg.a.Read()
+
+	r16mem.Write(a)
 }
 
 func (i *Instruction) ld_a_r16mem(c *CPU) {
-	// TODO
+	r16mem := c.getRegister16Mem(i.Opcode, []int{5, 4}).Read()
+
+	c.reg.a.Write(r16mem)
 }
 
 func (i *Instruction) ld_imm16_sp(c *CPU) {
-	// TODO
+	imm16 := c.getImm16()
+	sp := c.reg.sp.Read()
+
+	c.mmu.WriteWord(imm16, sp)
 }
 
 func (i *Instruction) inc_r16(c *CPU) {
-	// TODO
+	r16 := c.getRegister16(i.Opcode, []int{5, 4})
+
+	r16.Increment()
 }
 
 func (i *Instruction) dec_r16(c *CPU) {
-	// TODO
+	r16 := c.getRegister16(i.Opcode, []int{5, 4})
+
+	r16.Decrement()
 }
 
 func (i *Instruction) add_hl_r16(c *CPU) {
-	// TODO
+	hl := c.reg.hl.Read()
+	r16 := c.getRegister16(i.Opcode, []int{5, 4}).Read()
+
+	res := hl + r16
+	c.reg.hl.Write(res)
+
+	c.reg.f.SetN(false)
+	c.reg.f.SetH(IsHalfCarry16(hl, r16))
+	c.reg.f.SetC(res < hl)
 }
 
 func (i *Instruction) inc_r8(c *CPU) {
-	// TODO
+	r8 := c.getRegister8(i.Opcode, []int{5, 4, 3})
+	oldR8 := r8.Read()
+
+	res := r8.Increment()
+
+	c.reg.f.SetC(res == 0)
+	c.reg.f.SetN(false)
+	c.reg.f.SetH(IsHalfCarry8(oldR8, 1))
 }
 
 func (i *Instruction) dec_r8(c *CPU) {
-	// TODO
+	r8 := c.getRegister8(i.Opcode, []int{5, 4, 3})
+	oldR8 := r8.Read()
+
+	res := r8.Decrement()
+
+	c.reg.f.SetC(res == 0)
+	c.reg.f.SetN(true)
+	c.reg.f.SetH(IsHalfBorrow8(oldR8, 1))
 }
 
 func (i *Instruction) ld_r8_imm8(c *CPU) {
-	// TODO
+	r8 := c.getRegister8(i.Opcode, []int{5, 4, 3})
+	imm8 := c.getImm8()
+
+	r8.Write(imm8)
 }
 
 func (i *Instruction) rlca(c *CPU) {
-	// TODO
+	a := c.reg.a.Read()
+
+	res, carry := RotateLeft(a)
+	c.reg.a.Write(res)
+
+	c.reg.f.SetZ(false)
+	c.reg.f.SetN(false)
+	c.reg.f.SetH(false)
+	c.reg.f.SetC(carry)
 }
 
 func (i *Instruction) rrca(c *CPU) {
-	// TODO
+	a := c.reg.a.Read()
+
+	res, carry := RotateRight(a)
+	c.reg.a.Write(res)
+
+	c.reg.f.SetZ(false)
+	c.reg.f.SetN(false)
+	c.reg.f.SetH(false)
+	c.reg.f.SetC(carry)
 }
 
 func (i *Instruction) rla(c *CPU) {
-	// TODO
+	a := c.reg.a.Read()
+
+	res, carry := RotateLeftThroughCarry(a, c.reg.f.C())
+	c.reg.a.Write(res)
+
+	c.reg.f.SetZ(false)
+	c.reg.f.SetN(false)
+	c.reg.f.SetH(false)
+	c.reg.f.SetC(carry)
 }
 
 func (i *Instruction) rra(c *CPU) {
-	// TODO
+	a := c.reg.a.Read()
+
+	res, carry := RotateRightThroughCarry(a, c.reg.f.C())
+	c.reg.a.Write(res)
+
+	c.reg.f.SetZ(false)
+	c.reg.f.SetN(false)
+	c.reg.f.SetH(false)
+	c.reg.f.SetC(carry)
 }
 
 func (i *Instruction) daa(c *CPU) {
@@ -770,7 +839,17 @@ func (i *Instruction) sub_a_r8(c *CPU) {
 }
 
 func (i *Instruction) sbc_a_r8(c *CPU) {
-	// TODO
+	a := c.reg.a.Read()
+	r8 := c.getRegister8(i.Opcode, []int{2, 1, 0}).Read()
+	carry := AsUint8(c.reg.f.C())
+
+	res := a - r8 - carry
+	c.reg.a.Write(res)
+
+	c.reg.f.SetZ(res == 0)
+	c.reg.f.SetN(true)
+	c.reg.f.SetH(IsHalfBorrow8(a, r8))
+	c.reg.f.SetC(r8+carry > a)
 }
 
 func (i *Instruction) and_a_r8(c *CPU) {
@@ -778,7 +857,16 @@ func (i *Instruction) and_a_r8(c *CPU) {
 }
 
 func (i *Instruction) xor_a_r8(c *CPU) {
-	// TODO
+	a := c.reg.a.Read()
+	r8 := c.getRegister8(i.Opcode, []int{2, 1, 0}).Read()
+
+	res := a ^ r8
+	c.reg.a.Write(res)
+
+	c.reg.f.SetZ(res == 0)
+	c.reg.f.SetN(false)
+	c.reg.f.SetH(false)
+	c.reg.f.SetC(false)
 }
 
 func (i *Instruction) or_a_r8(c *CPU) {
@@ -821,6 +909,7 @@ func (i *Instruction) or_a_imm8(c *CPU) {
 func (i *Instruction) cp_a_imm8(c *CPU) {
 	a := c.reg.a.Read()
 	imm8 := c.getImm8()
+
 	res := a - imm8
 
 	c.reg.f.SetZ(res == 0)
@@ -862,7 +951,12 @@ func (i *Instruction) call_imm16(c *CPU) {
 }
 
 func (i *Instruction) rst_tgt3(c *CPU) {
-	// TODO
+	tgt := ExtractBits(i.Opcode, []int{5, 4, 3})
+	sp := c.reg.sp.Read()
+	pc := c.reg.pc.Read()
+
+	c.mmu.WriteWord(sp-2, pc)
+	c.reg.sp.Write(uint16(tgt))
 }
 
 func (i *Instruction) pop_r16stk(c *CPU) {

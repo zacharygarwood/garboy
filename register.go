@@ -3,13 +3,17 @@ package main
 type Register8 interface {
 	Read() uint8
 	Write(uint8)
+	Increment() uint8
+	Decrement() uint8
 }
 
 type Register16 interface {
 	Read() uint16
 	Write(uint16)
-	Increment()
-	Decrement()
+	Increment() uint16
+	Decrement() uint16
+	PostIncrement() uint16
+	PostDecrement() uint16
 }
 
 type Registers struct {
@@ -95,6 +99,16 @@ func (r *SingleRegister8) Write(val uint8) {
 	r.val = val
 }
 
+func (r *SingleRegister8) Increment() uint8 {
+	r.val = r.val + 1
+	return r.val
+}
+
+func (r *SingleRegister8) Decrement() uint8 {
+	r.val = r.val - 1
+	return r.val
+}
+
 func (r *SingleRegister16) Read() uint16 {
 	return r.val
 }
@@ -103,12 +117,26 @@ func (r *SingleRegister16) Write(val uint16) {
 	r.val = val
 }
 
-func (r *SingleRegister16) Increment() {
-	r.val++
+func (r *SingleRegister16) Increment() uint16 {
+	r.val = r.val + 1
+	return r.val
 }
 
-func (r *SingleRegister16) Decrement() {
-	r.val--
+func (r *SingleRegister16) Decrement() uint16 {
+	r.val = r.val - 1
+	return r.val
+}
+
+func (r *SingleRegister16) PostIncrement() uint16 {
+	old := r.val
+	r.Increment()
+	return old
+}
+
+func (r *SingleRegister16) PostDecrement() uint16 {
+	old := r.val
+	r.Decrement()
+	return old
 }
 
 func (r *CombinedRegister16) Read() uint16 {
@@ -120,12 +148,26 @@ func (r *CombinedRegister16) Write(val uint16) {
 	r.lo.Write(uint8(val & 0xFF))
 }
 
-func (r *CombinedRegister16) Increment() {
+func (r *CombinedRegister16) Increment() uint16 {
 	r.Write(r.Read() + 1)
+	return r.Read()
 }
 
-func (r *CombinedRegister16) Decrement() {
+func (r *CombinedRegister16) Decrement() uint16 {
 	r.Write(r.Read() - 1)
+	return r.Read()
+}
+
+func (r *CombinedRegister16) PostIncrement() uint16 {
+	old := r.Read()
+	r.Increment()
+	return old
+}
+
+func (r *CombinedRegister16) PostDecrement() uint16 {
+	old := r.Read()
+	r.Decrement()
+	return old
 }
 
 func (f *FlagRegister) Read() uint8 {

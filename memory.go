@@ -92,3 +92,15 @@ func (m *MemoryReference8) Read() uint8 {
 func (m *MemoryReference8) Write(val uint8) {
 	m.cpu.mmu.Write(m.addr, val)
 }
+
+func (m *MemoryReference8) Increment() uint8 {
+	res := m.cpu.mmu.Read(m.addr) + 1
+	m.cpu.mmu.Write(m.addr, res)
+	return res
+}
+
+func (m *MemoryReference8) Decrement() uint8 {
+	res := m.cpu.mmu.Read(m.addr) - 1
+	m.cpu.mmu.Write(m.addr, res)
+	return res
+}

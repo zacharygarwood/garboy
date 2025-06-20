@@ -1,14 +1,14 @@
 package main
 
 type CPU struct {
-	reg Registers
-	mmu MMU
+	reg *Registers
+	mmu *MMU
 }
 
 func NewCPU(cartridge *Cartridge, ppu *PPU) *CPU {
 	return &CPU{
-		reg: *NewRegisters(),
-		mmu: *NewMMU(cartridge, ppu),
+		reg: NewRegisters(),
+		mmu: NewMMU(cartridge, ppu),
 	}
 }
 

@@ -25,3 +25,45 @@ func IsHalfBorrow8(a byte, b byte) bool {
 func IsHalfBorrow16(a uint16, b uint16) bool {
 	return ((a & 0xFFF) - (b & 0xFFF)) < 0
 }
+
+// Flags need to be uint8 for some instructions
+func AsUint8(b bool) uint8 {
+	if b {
+		return 1
+	}
+	return 0
+}
+
+func RotateRight(val uint8) (uint8, bool) {
+	lsb := val & 0x01
+	result := (val << 1) | lsb
+	carry := (result & 0x01) != 0
+	return result, carry
+}
+
+func RotateLeft(val uint8) (uint8, bool) {
+	msb := (val & 0x80) >> 7
+	result := (val << 1) | msb
+	carry := (result & 0x01) != 0
+	return result, carry
+}
+
+func RotateRightThroughCarry(val uint8, carry bool) (uint8, bool) {
+	lsb := val & 0x01
+	result := val << 1
+	if carry {
+		result |= 0x80
+	}
+	newCarry := lsb != 0
+	return result, newCarry
+}
+
+func RotateLeftThroughCarry(val uint8, carry bool) (uint8, bool) {
+	msb := (val & 0x80) != 0
+	result := val << 1
+	if carry {
+		result |= 0x01
+	}
+	newCarry := msb
+	return result, newCarry
+}

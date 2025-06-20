@@ -103,3 +103,11 @@ func (m *MMU) Write(address uint16, val byte) {
 		panic("Should not be reading past 0xFFFF")
 	}
 }
+
+func (m *MMU) WriteWord(address uint16, val uint16) {
+	hi := uint8((val >> 8) & 0xFF)
+	lo := uint8(val & 0xFF)
+
+	m.Write(address, lo)
+	m.Write(address, hi)
+}
