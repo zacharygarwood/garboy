@@ -974,31 +974,96 @@ func (i *Instruction) cp_a_r8(c *CPU) {
 
 // Block 3
 func (i *Instruction) add_a_imm8(c *CPU) {
-	// TODO
+	a := c.reg.a.Read()
+	imm8 := c.getImm8()
+
+	res := a + imm8
+	c.reg.a.Write(res)
+
+	c.reg.f.SetZ(res == 0)
+	c.reg.f.SetN(false)
+	c.reg.f.SetH(IsHalfCarry8(a, imm8))
+	c.reg.f.SetC(res < a)
 }
 
 func (i *Instruction) adc_a_imm8(c *CPU) {
-	// TODO
+	a := c.reg.a.Read()
+	imm8 := c.getImm8()
+	carry := AsUint8(c.reg.f.C())
+
+	res := a + imm8 + carry
+	c.reg.a.Write(res)
+
+	c.reg.f.SetZ(res == 0)
+	c.reg.f.SetN(false)
+	c.reg.f.SetH(IsHalfCarry8(a, imm8+carry))
+	c.reg.f.SetC(res < a)
 }
 
 func (i *Instruction) sub_a_imm8(c *CPU) {
-	// TODO
+	a := c.reg.a.Read()
+	imm8 := c.getImm8()
+
+	res := a - imm8
+	c.reg.a.Write(res)
+
+	c.reg.f.SetZ(res == 0)
+	c.reg.f.SetN(true)
+	c.reg.f.SetH(IsHalfBorrow8(a, imm8))
+	c.reg.f.SetC(imm8 > a)
 }
 
 func (i *Instruction) sbc_a_imm8(c *CPU) {
-	// TODO
+	a := c.reg.a.Read()
+	imm8 := c.getImm8()
+	carry := AsUint8(c.reg.f.C())
+
+	res := a - imm8 - carry
+	c.reg.a.Write(res)
+
+	c.reg.f.SetZ(res == 0)
+	c.reg.f.SetN(true)
+	c.reg.f.SetH(IsHalfBorrow8(a, imm8+carry))
+	c.reg.f.SetC((imm8 + carry) > a)
 }
 
 func (i *Instruction) and_a_imm8(c *CPU) {
-	// TODO
+	a := c.reg.a.Read()
+	imm8 := c.getImm8()
+
+	res := a & imm8
+	c.reg.a.Write(res)
+
+	c.reg.f.SetZ(res == 0)
+	c.reg.f.SetN(false)
+	c.reg.f.SetH(true)
+	c.reg.f.SetC(false)
 }
 
 func (i *Instruction) xor_a_imm8(c *CPU) {
-	// TODO
+	a := c.reg.a.Read()
+	imm8 := c.getImm8()
+
+	res := a ^ imm8
+	c.reg.a.Write(res)
+
+	c.reg.f.SetZ(res == 0)
+	c.reg.f.SetN(false)
+	c.reg.f.SetH(false)
+	c.reg.f.SetC(false)
 }
 
 func (i *Instruction) or_a_imm8(c *CPU) {
-	// TODO
+	a := c.reg.a.Read()
+	imm8 := c.getImm8()
+
+	res := a | imm8
+	c.reg.a.Write(res)
+
+	c.reg.f.SetZ(res == 0)
+	c.reg.f.SetN(false)
+	c.reg.f.SetH(false)
+	c.reg.f.SetC(false)
 }
 
 func (i *Instruction) cp_a_imm8(c *CPU) {
@@ -1014,35 +1079,70 @@ func (i *Instruction) cp_a_imm8(c *CPU) {
 }
 
 func (i *Instruction) ret_cond(c *CPU) {
-	// TODO
+	cond := c.getCond(i.Opcode, []int{4, 3})
+	if cond {
+		spMem := c.mmu.ReadWord(c.reg.sp.Read())
+
+		c.reg.pc.Write(spMem)
+		c.reg.sp.Write(c.reg.sp.Read() + 2)
+	}
 }
 
 func (i *Instruction) ret(c *CPU) {
-	// TODO
+	spMem := c.mmu.ReadWord(c.reg.sp.Read())
+
+	c.reg.pc.Write(spMem)
+	c.reg.sp.Write(c.reg.sp.Read() + 2)
 }
 
 func (i *Instruction) reti(c *CPU) {
-	// TODO
+	spMem := c.mmu.ReadWord(c.reg.sp.Read())
+
+	c.reg.pc.Write(spMem)
+	c.reg.sp.Write(c.reg.sp.Read() + 2)
+	c.IME = true
 }
 
 func (i *Instruction) jp_cond_imm16(c *CPU) {
-	// TODO
+	cond := c.getCond(i.Opcode, []int{4, 3})
+	imm16 := c.getImm16()
+
+	if cond {
+		c.reg.pc.Write(imm16)
+	}
 }
 
 func (i *Instruction) jp_imm16(c *CPU) {
-	// TODO
+	imm16 := c.getImm16()
+
+	c.reg.pc.Write(imm16)
 }
 
 func (i *Instruction) jp_hl(c *CPU) {
-	// TODO
+	c.reg.pc.Write(c.reg.hl.Read())
 }
 
 func (i *Instruction) call_cond_imm16(c *CPU) {
-	// TODO
+	cond := c.getCond(i.Opcode, []int{4, 3})
+	imm16 := c.getImm16()
+	sp := c.reg.sp.Read()
+	pc := c.reg.pc.Read()
+
+	if cond {
+		c.mmu.WriteWord(sp-2, pc)
+		c.reg.sp.Write(sp - 2)
+		c.reg.pc.Write(imm16)
+	}
 }
 
 func (i *Instruction) call_imm16(c *CPU) {
-	// TODO
+	imm16 := c.getImm16()
+	sp := c.reg.sp.Read()
+	pc := c.reg.pc.Read()
+
+	c.mmu.WriteWord(sp-2, pc)
+	c.reg.sp.Write(sp - 2)
+	c.reg.pc.Write(imm16)
 }
 
 func (i *Instruction) rst_tgt3(c *CPU) {
@@ -1051,7 +1151,8 @@ func (i *Instruction) rst_tgt3(c *CPU) {
 	pc := c.reg.pc.Read()
 
 	c.mmu.WriteWord(sp-2, pc)
-	c.reg.sp.Write(uint16(tgt))
+	c.reg.sp.Write(sp - 2)
+	c.reg.pc.Write(uint16(tgt))
 }
 
 func (i *Instruction) pop_r16stk(c *CPU) {

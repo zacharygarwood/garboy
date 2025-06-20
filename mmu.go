@@ -104,10 +104,17 @@ func (m *MMU) Write(address uint16, val byte) {
 	}
 }
 
+func (m *MMU) ReadWord(address uint16) uint16 {
+	lo := m.Read(address)
+	hi := m.Read(address + 1)
+
+	return (uint16(hi) << 8) + uint16(lo)
+}
+
 func (m *MMU) WriteWord(address uint16, val uint16) {
 	hi := uint8((val >> 8) & 0xFF)
 	lo := uint8(val & 0xFF)
 
 	m.Write(address, lo)
-	m.Write(address, hi)
+	m.Write(address+1, hi)
 }

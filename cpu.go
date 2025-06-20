@@ -5,6 +5,7 @@ type CPU struct {
 	mmu *MMU
 
 	halted bool
+	IME    bool
 }
 
 func NewCPU(cartridge *Cartridge, ppu *PPU) *CPU {
