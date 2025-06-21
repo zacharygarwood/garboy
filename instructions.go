@@ -1150,7 +1150,8 @@ func (i *Instruction) call_imm16(c *CPU) {
 }
 
 func (i *Instruction) rst_tgt3(c *CPU) {
-	tgt := ExtractBits(i.Opcode, []int{5, 4, 3})
+	tgt := ExtractBits(i.Opcode, []int{5, 4, 3}) << 3
+
 	sp := c.reg.sp.Read()
 	pc := c.reg.pc.Read()
 
