@@ -1,5 +1,9 @@
 package main
 
+import (
+	"fmt"
+)
+
 var BOOT_ROM = [256]byte{
 	0x31, 0xFE, 0xFF, 0xAF, 0x21, 0xFF, 0x9F, 0x32, 0xCB, 0x7C, 0x20, 0xFB, 0x21, 0x26, 0xFF, 0x0E,
 	0x11, 0x3E, 0x80, 0x32, 0xE2, 0x0C, 0x3E, 0xF3, 0xE2, 0x32, 0x3E, 0x77, 0x77, 0x3E, 0xFC, 0xE0,
@@ -51,7 +55,7 @@ func (m *MMU) Read(address uint16) byte {
 	case address < 0x4000:
 		return m.cartridge.ReadROM(address)
 	case address < 0x8000:
-		return m.cartridge.ReadROM(address - 0x4000)
+		return m.cartridge.ReadROM(address)
 	case address < 0xA000:
 		return m.ppu.ReadVRAM(address - 0x8000)
 	case address < 0xC000:
@@ -65,6 +69,10 @@ func (m *MMU) Read(address uint16) byte {
 	case address < 0xFF00:
 		return 0xFF // Not usable
 	case address < 0xFF80:
+		// FIXME: Only used for GB Doctor's tests
+		if address == 0xFF44 {
+			return 0x90
+		}
 		return m.io.Read(address - 0xFF00)
 	case address < 0xFFFF:
 		return m.hram.Read(address - 0xFF80)
@@ -94,7 +102,17 @@ func (m *MMU) Write(address uint16, val byte) {
 	case address < 0xFF00:
 		return // Not usable
 	case address < 0xFF80:
-		m.io.Write(address-0xFF00, val)
+		// FIXME: Used for Blargg's CPU tests https://emudev.de/gameboy-emulator/testing-our-cpu/
+		if address == 0xFF02 && val == 0x81 {
+			out := m.Read(0xFF01)
+			fmt.Printf("%c", out)
+			return
+		}
+		if m.bootROMEnabled && address == 0xFF50 && val != 0 {
+			m.bootROMEnabled = false
+		} else {
+			m.io.Write(address-0xFF00, val)
+		}
 	case address < 0xFFFF:
 		m.hram.Write(address-0xFF80, val)
 	case address == 0xFFFF:

@@ -1,15 +1,18 @@
 package main
 
-import "fmt"
-
 func main() {
-	cartridge := NewCartridge("./test_roms/cpu_instrs.gb", 0x2000)
+	cartridge := NewCartridge("./test_roms/01-special.gb", 0x2000)
 	ppu := NewPPU()
 	cpu := NewCPU(cartridge, ppu)
 
-	for range 256 {
-		cpu.Step()
-	}
+	cpu.SkipBootROM()
 
-	fmt.Printf("Boot ROM implemented!")
+	maxCycles := 1_000_000
+	totalCycles := 0
+
+	for totalCycles < maxCycles {
+		cpu.PrintState()
+		cycles := cpu.Step()
+		totalCycles += int(cycles)
+	}
 }

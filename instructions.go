@@ -1,7 +1,5 @@
 package main
 
-import "log"
-
 type Instruction struct {
 	Opcode   byte
 	Mnemonic string
@@ -11,14 +9,14 @@ type Instruction struct {
 }
 
 type Cycles struct {
-	branchedCycles uint8
-	cycles         uint8
+	branched uint8
+	normal   uint8
 }
 
-func NewCycles(cycles uint8, branchedCycles uint8) Cycles {
+func NewCycles(normal uint8, branched uint8) Cycles {
 	return Cycles{
-		cycles:         cycles,
-		branchedCycles: branchedCycles,
+		normal:   normal,
+		branched: branched,
 	}
 }
 
@@ -277,6 +275,8 @@ var INSTRUCTIONS []Instruction = []Instruction{
 	{0xf9, "LD SP, HL", 1, NewCycles(8, 8), (*Instruction).ld_sp_hl},
 	{0xfa, "LD A, (u16)", 3, NewCycles(16, 16), (*Instruction).ld_a_imm16},
 	{0xfb, "EI", 1, NewCycles(4, 4), (*Instruction).ei},
+	INVALID_INSTRUCTION,
+	INVALID_INSTRUCTION,
 	{0xfe, "CP A, u8", 2, NewCycles(8, 8), (*Instruction).cp_a_imm8},
 	{0xff, "RST 38H", 1, NewCycles(16, 16), (*Instruction).rst_tgt3},
 }
@@ -652,7 +652,7 @@ func (c *CPU) getCond(opcode byte, bits []int) bool {
 	}
 }
 
-func (c *Instruction) invalid_instruction() {
+func (i *Instruction) invalid_instruction(c *CPU) {
 	panic("Calling invalid instruction")
 }
 
@@ -716,7 +716,7 @@ func (i *Instruction) inc_r8(c *CPU) {
 
 	res := r8.Increment()
 
-	c.reg.f.SetC(res == 0)
+	c.reg.f.SetZ(res == 0)
 	c.reg.f.SetN(false)
 	c.reg.f.SetH(IsHalfCarry8(oldR8, 1))
 }
@@ -727,7 +727,7 @@ func (i *Instruction) dec_r8(c *CPU) {
 
 	res := r8.Decrement()
 
-	c.reg.f.SetC(res == 0)
+	c.reg.f.SetZ(res == 0)
 	c.reg.f.SetN(true)
 	c.reg.f.SetH(IsHalfBorrow8(oldR8, 1))
 }
@@ -849,6 +849,7 @@ func (i *Instruction) jr_cond_imm8(c *CPU) {
 	if cond {
 		res := uint16(int(pc) + int(imm8))
 		c.reg.pc.Write(res)
+		c.branched = true
 	}
 }
 
@@ -1085,6 +1086,7 @@ func (i *Instruction) ret_cond(c *CPU) {
 
 		c.reg.pc.Write(spMem)
 		c.reg.sp.Write(c.reg.sp.Read() + 2)
+		c.branched = true
 	}
 }
 
@@ -1109,6 +1111,7 @@ func (i *Instruction) jp_cond_imm16(c *CPU) {
 
 	if cond {
 		c.reg.pc.Write(imm16)
+		c.branched = true
 	}
 }
 
@@ -1132,6 +1135,7 @@ func (i *Instruction) call_cond_imm16(c *CPU) {
 		c.mmu.WriteWord(sp-2, pc)
 		c.reg.sp.Write(sp - 2)
 		c.reg.pc.Write(imm16)
+		c.branched = true
 	}
 }
 

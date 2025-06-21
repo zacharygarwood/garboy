@@ -178,6 +178,15 @@ func (f *FlagRegister) Write(val uint8) {
 	f.val = val & 0xF0
 }
 
+// These methods should not be used. They are only here to abide by the Register8 interface
+func (f *FlagRegister) Increment() uint8 {
+	panic("Should not be incrementing a flag register")
+}
+
+func (f *FlagRegister) Decrement() uint8 {
+	panic("Should not be decrementing a flag register")
+}
+
 func (f *FlagRegister) Z() bool {
 	return f.val&(1<<7) != 0
 }

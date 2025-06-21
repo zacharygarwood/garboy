@@ -34,3 +34,4 @@ go.work.sum
 # Project temp files
 instruction_gen.py
 opcodes.json
+output_files
