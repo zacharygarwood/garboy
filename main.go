@@ -7,7 +7,7 @@ func main() {
 
 	cpu.SkipBootROM()
 
-	maxCycles := 1_000_000
+	maxCycles := 10_000_000
 	totalCycles := 0
 
 	for totalCycles < maxCycles {
