@@ -1223,7 +1223,7 @@ func (i *Instruction) add_sp_imm8(c *CPU) {
 	imm8 := c.getImm8()
 	sp := c.reg.sp.Read()
 
-	res := uint16(int(sp) + int(imm8))
+	res := uint16(int(sp) + int(int8(imm8)))
 	c.reg.sp.Write(res)
 
 	c.reg.f.SetZ(false)
@@ -1237,7 +1237,7 @@ func (i *Instruction) ld_hl_sp_plus_imm8(c *CPU) {
 	imm8 := c.getImm8()
 	sp := c.reg.sp.Read()
 
-	res := uint16(int(sp) + int(imm8))
+	res := uint16(int(sp) + int(int8(imm8)))
 	c.reg.hl.Write(res)
 
 	c.reg.f.SetZ(false)
