@@ -18,12 +18,28 @@ func IsHalfCarry16(a uint16, b uint16) bool {
 	return (((a & 0xFFF) + (b & 0xFFF)) & 0x1000) == 0x1000
 }
 
+func IsHalfCarryWithCarry8(a byte, b byte, c byte) bool {
+	return ((a & 0xF) + (b & 0xF) + c) > 0xF
+}
+
+func IsHalfCarryWithCarry16(a uint16, b uint16, c uint16) bool {
+	return ((a & 0xFFF) + (b & 0xFFF) + c) > 0xFFF
+}
+
 func IsHalfBorrow8(a uint8, b uint8) bool {
 	return (a & 0xF) < (b & 0xF)
 }
 
 func IsHalfBorrow16(a uint16, b uint16) bool {
 	return (a & 0xFFF) < (b & 0xFFF)
+}
+
+func IsHalfBorrowWithCarry8(a uint8, b uint8, c uint8) bool {
+	return (a & 0xF) < ((b & 0xF) + c)
+}
+
+func IsHalfBorrowWithCarry16(a uint16, b uint16, c uint16) bool {
+	return (a & 0xFFF) < ((b & 0xFFF) + c)
 }
 
 // Flags need to be uint8 for some instructions
