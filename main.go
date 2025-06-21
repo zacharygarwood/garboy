@@ -1,7 +1,7 @@
 package main
 
 func main() {
-	cartridge := NewCartridge("./test_roms/05-op rp.gb", 0x2000)
+	cartridge := NewCartridge("./test_roms/06-ld r,r.gb", 0x2000)
 	ppu := NewPPU()
 	cpu := NewCPU(cartridge, ppu)
 
