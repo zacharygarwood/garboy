@@ -52,15 +52,15 @@ func AsUint8(b bool) uint8 {
 
 func RotateRight(val uint8) (uint8, bool) {
 	lsb := val & 0x01
-	result := (val << 1) | lsb
-	carry := (result & 0x01) != 0
+	result := (val >> 1) | (lsb << 7)
+	carry := lsb != 0
 	return result, carry
 }
 
 func RotateLeft(val uint8) (uint8, bool) {
 	msb := (val & 0x80) >> 7
 	result := (val << 1) | msb
-	carry := (result & 0x01) != 0
+	carry := msb != 0
 	return result, carry
 }
 

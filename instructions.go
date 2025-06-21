@@ -891,8 +891,8 @@ func (i *Instruction) adc_a_r8(c *CPU) {
 
 	c.reg.f.SetZ(res == 0)
 	c.reg.f.SetN(false)
-	c.reg.f.SetH(IsHalfCarry8(a, r8+carry))
-	c.reg.f.SetC(res < a)
+	c.reg.f.SetH(IsHalfCarryWithCarry8(a, r8, carry))
+	c.reg.f.SetC(res <= a && (r8 != 0 || carry != 0))
 }
 
 func (i *Instruction) sub_a_r8(c *CPU) {
@@ -918,8 +918,8 @@ func (i *Instruction) sbc_a_r8(c *CPU) {
 
 	c.reg.f.SetZ(res == 0)
 	c.reg.f.SetN(true)
-	c.reg.f.SetH(IsHalfBorrow8(a, r8))
-	c.reg.f.SetC(r8+carry > a)
+	c.reg.f.SetH(IsHalfBorrowWithCarry8(a, r8, carry))
+	c.reg.f.SetC(res >= a && (r8 != 0 || carry != 0))
 }
 
 func (i *Instruction) and_a_r8(c *CPU) {
