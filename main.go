@@ -1,13 +1,13 @@
 package main
 
 func main() {
-	cartridge := NewCartridge("./test_roms/10-bit ops.gb", 0x2000)
+	cartridge := NewCartridge("./test_roms/11-op a,(hl).gb", 0x2000)
 	ppu := NewPPU()
 	cpu := NewCPU(cartridge, ppu)
 
 	cpu.SkipBootROM()
 
-	maxCycles := 60_000_000
+	maxCycles := 80_000_000
 	totalCycles := 0
 
 	for totalCycles < maxCycles {
