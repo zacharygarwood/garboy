@@ -3,8 +3,6 @@ package main
 type Register8 interface {
 	Read() uint8
 	Write(uint8)
-	Increment() uint8
-	Decrement() uint8
 }
 
 type Register16 interface {
@@ -53,6 +51,10 @@ type FlagRegister struct {
 	val uint8 // Only top four bits matter so operations use masks
 }
 
+type InterruptRegister struct {
+	val byte
+}
+
 func NewRegisters() *Registers {
 	a := &SingleRegister8{}
 	b := &SingleRegister8{}
@@ -97,16 +99,6 @@ func (r *SingleRegister8) Read() uint8 {
 
 func (r *SingleRegister8) Write(val uint8) {
 	r.val = val
-}
-
-func (r *SingleRegister8) Increment() uint8 {
-	r.val = r.val + 1
-	return r.val
-}
-
-func (r *SingleRegister8) Decrement() uint8 {
-	r.val = r.val - 1
-	return r.val
 }
 
 func (r *SingleRegister16) Read() uint16 {
@@ -178,15 +170,6 @@ func (f *FlagRegister) Write(val uint8) {
 	f.val = val & 0xF0
 }
 
-// These methods should not be used. They are only here to abide by the Register8 interface
-func (f *FlagRegister) Increment() uint8 {
-	panic("Should not be incrementing a flag register")
-}
-
-func (f *FlagRegister) Decrement() uint8 {
-	panic("Should not be decrementing a flag register")
-}
-
 func (f *FlagRegister) Z() bool {
 	return f.val&(1<<7) != 0
 }
@@ -233,4 +216,12 @@ func (f *FlagRegister) SetC(val bool) {
 	} else {
 		f.val &^= 1 << 4
 	}
+}
+
+func (i *InterruptRegister) Read() uint8 {
+	return i.val
+}
+
+func (i *InterruptRegister) Write(val uint8) {
+	i.val = val
 }

@@ -714,7 +714,8 @@ func (i *Instruction) inc_r8(c *CPU) {
 	r8 := c.getRegister8(i.Opcode, []int{5, 4, 3})
 	oldR8 := r8.Read()
 
-	res := r8.Increment()
+	res := r8.Read() + 1
+	r8.Write(res)
 
 	c.reg.f.SetZ(res == 0)
 	c.reg.f.SetN(false)
@@ -725,7 +726,8 @@ func (i *Instruction) dec_r8(c *CPU) {
 	r8 := c.getRegister8(i.Opcode, []int{5, 4, 3})
 	oldR8 := r8.Read()
 
-	res := r8.Decrement()
+	res := r8.Read() - 1
+	r8.Write(res)
 
 	c.reg.f.SetZ(res == 0)
 	c.reg.f.SetN(true)
@@ -1102,7 +1104,7 @@ func (i *Instruction) reti(c *CPU) {
 
 	c.reg.pc.Write(spMem)
 	c.reg.sp.Write(c.reg.sp.Read() + 2)
-	c.IME = true
+	c.interruptMasterEnable = true
 }
 
 func (i *Instruction) jp_cond_imm16(c *CPU) {
@@ -1254,11 +1256,11 @@ func (i *Instruction) ld_sp_hl(c *CPU) {
 }
 
 func (i *Instruction) di(c *CPU) {
-	c.IME = false
+	c.interruptMasterEnable = false
 }
 
 func (i *Instruction) ei(c *CPU) {
-	c.IME = true
+	c.interruptMasterEnable = true
 }
 
 // 0xCB Prefixed instructions

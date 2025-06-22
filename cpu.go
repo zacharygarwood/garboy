@@ -8,7 +8,8 @@ type CPU struct {
 
 	branched bool
 	halted   bool
-	IME      bool
+
+	interruptMasterEnable bool // IME
 }
 
 func NewCPU(cartridge *Cartridge, ppu *PPU) *CPU {

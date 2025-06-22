@@ -25,7 +25,9 @@ type MMU struct {
 	wram      Memory
 	hram      Memory
 	io        Memory
-	ie        Memory
+
+	interruptEnable Register8 // IE
+	interruptFlag   Register8 // IF
 
 	bootROM        Memory
 	bootROMEnabled bool
@@ -33,14 +35,15 @@ type MMU struct {
 
 func NewMMU(cart *Cartridge, ppu *PPU) *MMU {
 	return &MMU{
-		cartridge:      cart,
-		ppu:            ppu,
-		wram:           NewRAM(0x2000),
-		hram:           NewRAM(0x7F),
-		io:             NewIORegisters(),
-		ie:             NewInterruptRegister(),
-		bootROM:        NewROM(BOOT_ROM[:]),
-		bootROMEnabled: true, // TODO: figure out when to turn this off
+		cartridge:       cart,
+		ppu:             ppu,
+		wram:            NewRAM(0x2000),
+		hram:            NewRAM(0x7F),
+		io:              NewIORegisters(),
+		interruptEnable: &InterruptRegister{},
+		interruptFlag:   &InterruptRegister{},
+		bootROM:         NewROM(BOOT_ROM[:]),
+		bootROMEnabled:  true,
 	}
 }
 
@@ -73,7 +76,7 @@ func (m *MMU) Read(address uint16) byte {
 	case address < 0xFFFF:
 		return m.hram.Read(address - 0xFF80)
 	case address == 0xFFFF:
-		return m.ie.Read(0)
+		return m.interruptEnable.Read()
 	default:
 		panic("Should not be reading past 0xFFFF")
 	}
@@ -97,22 +100,17 @@ func (m *MMU) Write(address uint16, val byte) {
 		m.ppu.WriteOAM(address-0xFE00, val)
 	case address < 0xFF00:
 		return // Not usable
+	case address == 0xFF02 && val == 0x81: // FIXME: Used for Blargg's CPU tests
+		//out := m.Read(0xFF01)
+		//fmt.Printf("%x", out)
+	case address == 0xFF50 && m.bootROMEnabled && val != 0:
+		m.bootROMEnabled = false
 	case address < 0xFF80:
-		// FIXME: Used for Blargg's CPU tests https://emudev.de/gameboy-emulator/testing-our-cpu/
-		if address == 0xFF02 && val == 0x81 {
-			//out := m.Read(0xFF01)
-			//fmt.Printf("%c", out)
-			return
-		}
-		if m.bootROMEnabled && address == 0xFF50 && val != 0 {
-			m.bootROMEnabled = false
-		} else {
-			m.io.Write(address-0xFF00, val)
-		}
+		m.io.Write(address-0xFF00, val)
 	case address < 0xFFFF:
 		m.hram.Write(address-0xFF80, val)
 	case address == 0xFFFF:
-		m.ie.Write(0, val)
+		m.interruptFlag.Write(val)
 	default:
 		panic("Should not be reading past 0xFFFF")
 	}
