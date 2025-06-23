@@ -1,5 +1,7 @@
 package main
 
+import "fmt"
+
 var BOOT_ROM = [256]byte{
 	0x31, 0xFE, 0xFF, 0xAF, 0x21, 0xFF, 0x9F, 0x32, 0xCB, 0x7C, 0x20, 0xFB, 0x21, 0x26, 0xFF, 0x0E,
 	0x11, 0x3E, 0x80, 0x32, 0xE2, 0x0C, 0x3E, 0xF3, 0xE2, 0x32, 0x3E, 0x77, 0x77, 0x3E, 0xFC, 0xE0,
@@ -26,8 +28,8 @@ type MMU struct {
 	hram      Memory
 	io        Memory
 
-	interruptEnable Register8 // IE
-	interruptFlag   Register8 // IF
+	interruptEnable *InterruptRegister // IE
+	interruptFlag   *InterruptRegister // IF
 
 	bootROM        Memory
 	bootROMEnabled bool
@@ -62,16 +64,16 @@ func (m *MMU) Read(address uint16) byte {
 	case address < 0xE000:
 		return m.wram.Read(address - 0xC000)
 	case address < 0xFE00:
-		return m.wram.Read(address - 0xE000) // Echo RAM
+		return m.wram.Read(address - 0xE000)
 	case address < 0xFEA0:
 		return m.ppu.ReadOAM(address - 0xFE00)
 	case address < 0xFF00:
 		return 0xFF // Not usable
+	case address == 0xFF0F:
+		return m.interruptFlag.Read()
+	case address == 0xFF44: // FIXME: Only used for GB Doctor's tests
+		return 0x90
 	case address < 0xFF80:
-		// FIXME: Only used for GB Doctor's tests
-		if address == 0xFF44 {
-			return 0x90
-		}
 		return m.io.Read(address - 0xFF00)
 	case address < 0xFFFF:
 		return m.hram.Read(address - 0xFF80)
@@ -95,14 +97,16 @@ func (m *MMU) Write(address uint16, val byte) {
 	case address < 0xE000:
 		m.wram.Write(address-0xC000, val)
 	case address < 0xFE00:
-		m.wram.Write(address-0xE000, val) // Echo RAM
+		m.wram.Write(address-0xE000, val)
 	case address < 0xFEA0:
 		m.ppu.WriteOAM(address-0xFE00, val)
 	case address < 0xFF00:
 		return // Not usable
 	case address == 0xFF02 && val == 0x81: // FIXME: Used for Blargg's CPU tests
-		//out := m.Read(0xFF01)
-		//fmt.Printf("%x", out)
+		out := m.Read(0xFF01)
+		fmt.Printf("%c", out)
+	case address == 0xFF0F:
+		m.interruptFlag.Write(val)
 	case address == 0xFF50 && m.bootROMEnabled && val != 0:
 		m.bootROMEnabled = false
 	case address < 0xFF80:
@@ -110,7 +114,7 @@ func (m *MMU) Write(address uint16, val byte) {
 	case address < 0xFFFF:
 		m.hram.Write(address-0xFF80, val)
 	case address == 0xFFFF:
-		m.interruptFlag.Write(val)
+		m.interruptEnable.Write(val)
 	default:
 		panic("Should not be reading past 0xFFFF")
 	}
@@ -129,4 +133,14 @@ func (m *MMU) WriteWord(address uint16, val uint16) {
 
 	m.Write(address, lo)
 	m.Write(address+1, hi)
+}
+
+func (m *MMU) RequestInterrupt(interrupt uint8) {
+	res := m.interruptFlag.Read() | (1 << interrupt)
+	m.interruptFlag.Write(res)
+}
+
+func (m *MMU) ClearInterrupt(interrupt uint8) {
+	res := m.interruptFlag.Read() & ^(1 << interrupt)
+	m.interruptFlag.Write(res)
 }

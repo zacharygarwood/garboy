@@ -9,20 +9,38 @@ type CPU struct {
 	branched bool
 	halted   bool
 
-	interruptMasterEnable bool // IME
+	interruptMasterEnable        bool // IME
+	pendingInterruptMasterEnable bool
 }
 
 func NewCPU(cartridge *Cartridge, ppu *PPU) *CPU {
 	return &CPU{
-		reg: NewRegisters(),
-		mmu: NewMMU(cartridge, ppu),
+		reg:                   NewRegisters(),
+		mmu:                   NewMMU(cartridge, ppu),
+		branched:              false,
+		halted:                false,
+		interruptMasterEnable: true,
 	}
 }
 
 func (c *CPU) Step() uint8 {
-	opcode := c.fetch()
-	instruction := c.decode(opcode)
-	return c.execute(instruction)
+	c.handleInterrupts()
+
+	if !c.halted {
+		opcode := c.fetch()
+		instruction := c.decode(opcode)
+		cycles := c.execute(instruction)
+
+		if !c.interruptMasterEnable && c.pendingInterruptMasterEnable {
+			c.interruptMasterEnable = true
+			c.pendingInterruptMasterEnable = false
+		}
+
+		return cycles
+
+	} else {
+		return 4
+	}
 }
 
 // Fetches the opcode at PC
@@ -56,11 +74,50 @@ func (c *CPU) execute(instr Instruction) uint8 {
 	}
 }
 
-func (c *CPU) incrementPC(val uint8) {
-	pc := c.reg.pc.Read()
-	length := uint16(val)
+func (c *CPU) handleInterrupts() bool {
+	if !c.interruptMasterEnable {
+		return false
+	}
 
-	c.reg.pc.Write(pc + length)
+	ie := c.mmu.interruptEnable.Read()
+	iff := c.mmu.interruptFlag.Read()
+
+	pending := ie & iff
+	if pending == 0 {
+		return false
+	}
+
+	interruptSources := [5]uint16{0x40, 0x48, 0x50, 0x58, 0x60}
+	for i := 0; i < len(interruptSources); i++ {
+		interrupt := uint8(i)
+		if IsBitSet(pending, interrupt) {
+			pc := c.reg.pc
+
+			c.interruptMasterEnable = false
+			c.halted = false
+
+			c.mmu.ClearInterrupt(interrupt)
+			c.Push16(pc.Read())
+			pc.Write(interruptSources[i])
+			return true
+		}
+	}
+	return false
+}
+
+// Pushes val on to the stack (SP)
+func (c *CPU) Push16(val uint16) {
+	sp := c.reg.sp.Read() - 2
+	c.mmu.WriteWord(sp, val)
+	c.reg.sp.Write(sp)
+}
+
+// Pops val off the stack (SP)
+func (c *CPU) Pop16() uint16 {
+	sp := c.reg.sp.Read()
+	val := c.mmu.ReadWord(sp)
+	c.reg.sp.Write(sp + 2)
+	return val
 }
 
 func (c *CPU) SkipBootROM() {
@@ -74,7 +131,9 @@ func (c *CPU) SkipBootROM() {
 	c.reg.l.Write(0x4D)
 	c.reg.sp.Write(0xFFFE)
 	c.reg.pc.Write(0x0100)
+
 	c.mmu.bootROMEnabled = false
+	c.mmu.interruptFlag.Write(0x04)
 }
 
 func (c *CPU) PrintState() {

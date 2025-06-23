@@ -1257,10 +1257,11 @@ func (i *Instruction) ld_sp_hl(c *CPU) {
 
 func (i *Instruction) di(c *CPU) {
 	c.interruptMasterEnable = false
+	c.pendingInterruptMasterEnable = false
 }
 
 func (i *Instruction) ei(c *CPU) {
-	c.interruptMasterEnable = true
+	c.pendingInterruptMasterEnable = true
 }
 
 // 0xCB Prefixed instructions
