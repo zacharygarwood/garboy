@@ -3,50 +3,63 @@ package main
 import "fmt"
 
 type CPU struct {
-	reg *Registers
-	mmu *MMU
+	reg        *Registers
+	mmu        *MMU
+	interrupts *Interrupts
 
 	branched bool
 	halted   bool
+	haltBug  bool
 
 	interruptMasterEnable        bool // IME
 	pendingInterruptMasterEnable bool
 }
 
-func NewCPU(cartridge *Cartridge, ppu *PPU) *CPU {
+func NewCPU(mmu *MMU, interrupts *Interrupts) *CPU {
 	return &CPU{
 		reg:                   NewRegisters(),
-		mmu:                   NewMMU(cartridge, ppu),
+		mmu:                   mmu,
+		interrupts:            interrupts,
 		branched:              false,
 		halted:                false,
 		interruptMasterEnable: true,
 	}
 }
 
-func (c *CPU) Step() uint8 {
-	c.handleInterrupts()
+func (c *CPU) Tick() uint8 {
+	var cycles uint8 = 0
+	if c.handleInterrupts() {
+		cycles += 20
+	}
 
-	if !c.halted {
-		opcode := c.fetch()
-		instruction := c.decode(opcode)
-		cycles := c.execute(instruction)
-
-		if !c.interruptMasterEnable && c.pendingInterruptMasterEnable {
-			c.interruptMasterEnable = true
-			c.pendingInterruptMasterEnable = false
-		}
-
-		return cycles
-
-	} else {
+	if c.halted {
+		fmt.Printf("[DEBUG] CPU is halted\n")
 		return 4
 	}
+
+	opcode := c.fetch()
+	instruction := c.decode(opcode)
+	cycles += c.execute(instruction)
+
+	if c.pendingInterruptMasterEnable {
+		fmt.Printf("[DEBUG] SEtting IME to true\n")
+		c.interruptMasterEnable = true
+		c.pendingInterruptMasterEnable = false
+	}
+
+	return cycles
 }
 
 // Fetches the opcode at PC
 func (c *CPU) fetch() byte {
 	opcode := c.mmu.Read(c.reg.pc.Read())
-	c.reg.pc.Increment()
+
+	if c.haltBug {
+		fmt.Printf("[DEBUG] Setting halt bug to false\n")
+		c.haltBug = false
+	} else {
+		c.reg.pc.Increment()
+	}
 	return opcode
 }
 
@@ -74,31 +87,37 @@ func (c *CPU) execute(instr Instruction) uint8 {
 	}
 }
 
+var interruptSources = []uint16{0x40, 0x48, 0x50, 0x58, 0x60}
+
 func (c *CPU) handleInterrupts() bool {
-	if !c.interruptMasterEnable {
-		return false
-	}
-
-	ie := c.mmu.interruptEnable.Read()
-	iff := c.mmu.interruptFlag.Read()
-
+	fmt.Printf("[DEBUG] Handling interrupts\n")
+	ie := c.interrupts.IE()
+	iff := c.interrupts.IF()
 	pending := ie & iff
+
+	fmt.Printf("[DEBUG] IF: %x, IE: %x, Pending: %x\n", iff, ie, pending)
+
 	if pending == 0 {
+		fmt.Printf("[DEBUG] No pending interrupts\n")
 		return false
 	}
 
-	interruptSources := [5]uint16{0x40, 0x48, 0x50, 0x58, 0x60}
+	fmt.Printf("[DEBUG] Removing halt\n")
+	c.halted = false
+
+	if !c.interruptMasterEnable {
+		fmt.Printf("[DEBUG] Interrupt master enable is false\n")
+		return false
+	}
+
 	for i := 0; i < len(interruptSources); i++ {
 		interrupt := uint8(i)
 		if IsBitSet(pending, interrupt) {
-			pc := c.reg.pc
-
+			c.interrupts.Clear(interrupt)
 			c.interruptMasterEnable = false
-			c.halted = false
 
-			c.mmu.ClearInterrupt(interrupt)
-			c.Push16(pc.Read())
-			pc.Write(interruptSources[i])
+			c.Push16(c.reg.pc.Read())
+			c.reg.pc.Write(interruptSources[i])
 			return true
 		}
 	}
@@ -133,7 +152,6 @@ func (c *CPU) SkipBootROM() {
 	c.reg.pc.Write(0x0100)
 
 	c.mmu.bootROMEnabled = false
-	c.mmu.interruptFlag.Write(0x04)
 }
 
 func (c *CPU) PrintState() {

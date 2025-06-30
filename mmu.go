@@ -1,7 +1,5 @@
 package main
 
-import "fmt"
-
 var BOOT_ROM = [256]byte{
 	0x31, 0xFE, 0xFF, 0xAF, 0x21, 0xFF, 0x9F, 0x32, 0xCB, 0x7C, 0x20, 0xFB, 0x21, 0x26, 0xFF, 0x0E,
 	0x11, 0x3E, 0x80, 0x32, 0xE2, 0x0C, 0x3E, 0xF3, 0xE2, 0x32, 0x3E, 0x77, 0x77, 0x3E, 0xFC, 0xE0,
@@ -22,30 +20,30 @@ var BOOT_ROM = [256]byte{
 }
 
 type MMU struct {
-	cartridge *Cartridge
-	ppu       *PPU
-	wram      Memory
-	hram      Memory
-	io        Memory
+	cartridge  *Cartridge
+	ppu        *PPU
+	timer      *Timer
+	interrupts *Interrupts
 
-	interruptEnable *InterruptRegister // IE
-	interruptFlag   *InterruptRegister // IF
+	wram Memory
+	hram Memory
+	io   Memory
 
 	bootROM        Memory
 	bootROMEnabled bool
 }
 
-func NewMMU(cart *Cartridge, ppu *PPU) *MMU {
+func NewMMU(cart *Cartridge, ppu *PPU, timer *Timer, interrupts *Interrupts) *MMU {
 	return &MMU{
-		cartridge:       cart,
-		ppu:             ppu,
-		wram:            NewRAM(0x2000),
-		hram:            NewRAM(0x7F),
-		io:              NewIORegisters(),
-		interruptEnable: &InterruptRegister{},
-		interruptFlag:   &InterruptRegister{},
-		bootROM:         NewROM(BOOT_ROM[:]),
-		bootROMEnabled:  true,
+		cartridge:      cart,
+		ppu:            ppu,
+		timer:          timer,
+		interrupts:     interrupts,
+		wram:           NewRAM(0x2000),
+		hram:           NewRAM(0x7F),
+		io:             NewIORegisters(),
+		bootROM:        NewROM(BOOT_ROM[:]),
+		bootROMEnabled: true,
 	}
 }
 
@@ -69,8 +67,10 @@ func (m *MMU) Read(address uint16) byte {
 		return m.ppu.ReadOAM(address - 0xFE00)
 	case address < 0xFF00:
 		return 0xFF // Not usable
+	case address >= 0xFF04 && address <= 0xFF07:
+		return m.timer.Read(address)
 	case address == 0xFF0F:
-		return m.interruptFlag.Read()
+		return m.interrupts.IF()
 	case address == 0xFF44: // FIXME: Only used for GB Doctor's tests
 		return 0x90
 	case address < 0xFF80:
@@ -78,7 +78,7 @@ func (m *MMU) Read(address uint16) byte {
 	case address < 0xFFFF:
 		return m.hram.Read(address - 0xFF80)
 	case address == 0xFFFF:
-		return m.interruptEnable.Read()
+		return m.interrupts.IE()
 	default:
 		panic("Should not be reading past 0xFFFF")
 	}
@@ -103,10 +103,12 @@ func (m *MMU) Write(address uint16, val byte) {
 	case address < 0xFF00:
 		return // Not usable
 	case address == 0xFF02 && val == 0x81: // FIXME: Used for Blargg's CPU tests
-		out := m.Read(0xFF01)
-		fmt.Printf("%c", out)
+		// out := m.Read(0xFF01)
+		//fmt.Printf("%c", out)
+	case address >= 0xFF04 && address <= 0xFF07:
+		m.timer.Write(address, val)
 	case address == 0xFF0F:
-		m.interruptFlag.Write(val)
+		m.interrupts.Write(address, val)
 	case address == 0xFF50 && m.bootROMEnabled && val != 0:
 		m.bootROMEnabled = false
 	case address < 0xFF80:
@@ -114,7 +116,7 @@ func (m *MMU) Write(address uint16, val byte) {
 	case address < 0xFFFF:
 		m.hram.Write(address-0xFF80, val)
 	case address == 0xFFFF:
-		m.interruptEnable.Write(val)
+		m.interrupts.Write(address, val)
 	default:
 		panic("Should not be reading past 0xFFFF")
 	}
@@ -133,14 +135,4 @@ func (m *MMU) WriteWord(address uint16, val uint16) {
 
 	m.Write(address, lo)
 	m.Write(address+1, hi)
-}
-
-func (m *MMU) RequestInterrupt(interrupt uint8) {
-	res := m.interruptFlag.Read() | (1 << interrupt)
-	m.interruptFlag.Write(res)
-}
-
-func (m *MMU) ClearInterrupt(interrupt uint8) {
-	res := m.interruptFlag.Read() & ^(1 << interrupt)
-	m.interruptFlag.Write(res)
 }

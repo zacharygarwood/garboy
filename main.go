@@ -2,8 +2,11 @@ package main
 
 func main() {
 	cartridge := NewCartridge("./test_roms/02-interrupts.gb", 0x2000)
+	interrupts := NewInterrupts()
 	ppu := NewPPU()
-	cpu := NewCPU(cartridge, ppu)
+	timer := NewTimer(interrupts)
+	mmu := NewMMU(cartridge, ppu, timer, interrupts)
+	cpu := NewCPU(mmu, interrupts)
 
 	cpu.SkipBootROM()
 
@@ -11,8 +14,9 @@ func main() {
 	totalCycles := 0
 
 	for totalCycles < maxCycles {
-		// cpu.PrintState()
-		cycles := cpu.Step()
+		cpu.PrintState()
+		cycles := cpu.Tick()
+		timer.Tick(uint16(cycles))
 		totalCycles += int(cycles)
 	}
 }

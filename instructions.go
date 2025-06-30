@@ -1,5 +1,7 @@
 package main
 
+import "fmt"
+
 type Instruction struct {
 	Opcode   byte
 	Mnemonic string
@@ -866,7 +868,15 @@ func (i *Instruction) ld_r8_r8(c *CPU) {
 }
 
 func (i *Instruction) halt(c *CPU) {
-	c.halted = true
+	pending := c.interrupts.IF() & c.interrupts.IE()
+
+	if pending != 0 && !c.interruptMasterEnable {
+		fmt.Printf("[DEBUG] Setting halt bug to true\n")
+		c.haltBug = true
+	} else {
+		fmt.Printf("[DEBUG] Halting CPU\n")
+		c.halted = true
+	}
 }
 
 // Block 2
