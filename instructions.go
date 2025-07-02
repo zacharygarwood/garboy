@@ -1,7 +1,5 @@
 package main
 
-import "fmt"
-
 type Instruction struct {
 	Opcode   byte
 	Mnemonic string
@@ -239,7 +237,7 @@ var INSTRUCTIONS []Instruction = []Instruction{
 	INVALID_INSTRUCTION,
 	{0xd4, "CALL NC, a16", 3, NewCycles(6, 3), (*Instruction).call_cond_imm16},
 	{0xd5, "PUSH DE", 1, NewCycles(4, 4), (*Instruction).push_r16stk},
-	{0xd6, "SUB d8", 2, NewCycles(2, 2), (*Instruction).sub_a_r8},
+	{0xd6, "SUB A, u8", 2, NewCycles(2, 2), (*Instruction).sub_a_imm8},
 	{0xd7, "RST 10H", 1, NewCycles(4, 4), (*Instruction).rst_tgt3},
 	{0xd8, "RET C", 1, NewCycles(5, 2), (*Instruction).ret_cond},
 	{0xd9, "RETI", 1, NewCycles(4, 4), (*Instruction).reti},
@@ -255,15 +253,15 @@ var INSTRUCTIONS []Instruction = []Instruction{
 	INVALID_INSTRUCTION,
 	INVALID_INSTRUCTION,
 	{0xe5, "PUSH HL", 1, NewCycles(4, 4), (*Instruction).push_r16stk},
-	{0xe6, "AND d8", 2, NewCycles(2, 2), (*Instruction).and_a_r8},
+	{0xe6, "AND A, u8", 2, NewCycles(2, 2), (*Instruction).and_a_imm8},
 	{0xe7, "RST 20H", 1, NewCycles(4, 4), (*Instruction).rst_tgt3},
 	{0xe8, "ADD SP, r8", 2, NewCycles(4, 4), (*Instruction).add_sp_imm8},
-	{0xe9, "JP (HL)", 1, NewCycles(1, 1), (*Instruction).jp_imm16},
+	{0xe9, "JP (HL)", 1, NewCycles(1, 1), (*Instruction).jp_hl},
 	{0xea, "LD (a16), A", 3, NewCycles(4, 4), (*Instruction).ld_imm16_a},
 	INVALID_INSTRUCTION,
 	INVALID_INSTRUCTION,
 	INVALID_INSTRUCTION,
-	{0xee, "XOR d8", 2, NewCycles(2, 2), (*Instruction).xor_a_r8},
+	{0xee, "XOR A, u8", 2, NewCycles(2, 2), (*Instruction).xor_a_imm8},
 	{0xef, "RST 28H", 1, NewCycles(4, 4), (*Instruction).rst_tgt3},
 	{0xf0, "LDH A, (a8)", 2, NewCycles(3, 3), (*Instruction).ldh_a_imm8},
 	{0xf1, "POP AF", 1, NewCycles(3, 3), (*Instruction).pop_r16stk},
@@ -271,7 +269,7 @@ var INSTRUCTIONS []Instruction = []Instruction{
 	{0xf3, "DI", 1, NewCycles(1, 1), (*Instruction).di},
 	INVALID_INSTRUCTION,
 	{0xf5, "PUSH AF", 1, NewCycles(4, 4), (*Instruction).push_r16stk},
-	{0xf6, "OR d8", 2, NewCycles(2, 2), (*Instruction).or_a_r8},
+	{0xf6, "OR A, u8", 2, NewCycles(2, 2), (*Instruction).or_a_imm8},
 	{0xf7, "RST 30H", 1, NewCycles(4, 4), (*Instruction).rst_tgt3},
 	{0xf8, "LD HL, SP+r8", 2, NewCycles(3, 3), (*Instruction).ld_hl_sp_plus_imm8},
 	{0xf9, "LD SP, HL", 1, NewCycles(2, 2), (*Instruction).ld_sp_hl},
@@ -279,7 +277,7 @@ var INSTRUCTIONS []Instruction = []Instruction{
 	{0xfb, "EI", 1, NewCycles(1, 1), (*Instruction).ei},
 	INVALID_INSTRUCTION,
 	INVALID_INSTRUCTION,
-	{0xfe, "CP d8", 2, NewCycles(2, 2), (*Instruction).cp_a_r8},
+	{0xfe, "CP A, u8", 2, NewCycles(2, 2), (*Instruction).cp_a_imm8},
 	{0xff, "RST 38H", 1, NewCycles(4, 4), (*Instruction).rst_tgt3},
 }
 
@@ -871,10 +869,8 @@ func (i *Instruction) halt(c *CPU) {
 	pending := c.interrupts.IF() & c.interrupts.IE()
 
 	if pending != 0 && !c.interruptMasterEnable {
-		fmt.Printf("[DEBUG] Setting halt bug to true\n")
 		c.haltBug = true
 	} else {
-		fmt.Printf("[DEBUG] Halting CPU\n")
 		c.halted = true
 	}
 }
@@ -1114,7 +1110,7 @@ func (i *Instruction) reti(c *CPU) {
 
 	c.reg.pc.Write(spMem)
 	c.reg.sp.Write(c.reg.sp.Read() + 2)
-	c.interruptMasterEnable = true
+	c.imeDelay = 2
 }
 
 func (i *Instruction) jp_cond_imm16(c *CPU) {
@@ -1267,11 +1263,12 @@ func (i *Instruction) ld_sp_hl(c *CPU) {
 
 func (i *Instruction) di(c *CPU) {
 	c.interruptMasterEnable = false
-	c.pendingInterruptMasterEnable = false
+	c.imeDelay = 0
 }
 
 func (i *Instruction) ei(c *CPU) {
-	c.pendingInterruptMasterEnable = true
+	// Wait until after the next instruction to enable IME
+	c.imeDelay = 2
 }
 
 // 0xCB Prefixed instructions

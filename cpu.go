@@ -7,12 +7,13 @@ type CPU struct {
 	mmu        *MMU
 	interrupts *Interrupts
 
-	branched bool
-	halted   bool
-	haltBug  bool
+	branched              bool
+	halted                bool
+	haltBug               bool
+	interruptMasterEnable bool // IME
 
-	interruptMasterEnable        bool // IME
-	pendingInterruptMasterEnable bool
+	imeDelay        uint8
+	cyclesRemaining uint8
 }
 
 func NewCPU(mmu *MMU, interrupts *Interrupts) *CPU {
@@ -26,28 +27,33 @@ func NewCPU(mmu *MMU, interrupts *Interrupts) *CPU {
 	}
 }
 
-func (c *CPU) Tick() uint8 {
-	var cycles uint8 = 0
+func (c *CPU) Step() {
+	if c.cyclesRemaining > 0 {
+		c.cyclesRemaining--
+		return
+	}
+
+	if c.imeDelay > 0 {
+		c.imeDelay--
+		if c.imeDelay == 0 {
+			c.interruptMasterEnable = true
+		}
+	}
+
 	if c.handleInterrupts() {
-		cycles += 20
+		c.cyclesRemaining = 5 - 1
+		return
 	}
 
 	if c.halted {
-		fmt.Printf("[DEBUG] CPU is halted\n")
-		return 4
+		return
 	}
+
+	//c.PrintState()
 
 	opcode := c.fetch()
 	instruction := c.decode(opcode)
-	cycles += c.execute(instruction)
-
-	if c.pendingInterruptMasterEnable {
-		fmt.Printf("[DEBUG] SEtting IME to true\n")
-		c.interruptMasterEnable = true
-		c.pendingInterruptMasterEnable = false
-	}
-
-	return cycles
+	c.cyclesRemaining = c.execute(instruction) - 1
 }
 
 // Fetches the opcode at PC
@@ -55,7 +61,6 @@ func (c *CPU) fetch() byte {
 	opcode := c.mmu.Read(c.reg.pc.Read())
 
 	if c.haltBug {
-		fmt.Printf("[DEBUG] Setting halt bug to false\n")
 		c.haltBug = false
 	} else {
 		c.reg.pc.Increment()
@@ -90,23 +95,17 @@ func (c *CPU) execute(instr Instruction) uint8 {
 var interruptSources = []uint16{0x40, 0x48, 0x50, 0x58, 0x60}
 
 func (c *CPU) handleInterrupts() bool {
-	fmt.Printf("[DEBUG] Handling interrupts\n")
 	ie := c.interrupts.IE()
 	iff := c.interrupts.IF()
 	pending := ie & iff
 
-	fmt.Printf("[DEBUG] IF: %x, IE: %x, Pending: %x\n", iff, ie, pending)
-
 	if pending == 0 {
-		fmt.Printf("[DEBUG] No pending interrupts\n")
 		return false
 	}
 
-	fmt.Printf("[DEBUG] Removing halt\n")
 	c.halted = false
 
 	if !c.interruptMasterEnable {
-		fmt.Printf("[DEBUG] Interrupt master enable is false\n")
 		return false
 	}
 

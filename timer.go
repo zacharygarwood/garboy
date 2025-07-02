@@ -1,6 +1,6 @@
 package main
 
-import "fmt"
+const cycles = 4
 
 var timerFrequencies = []uint16{1024, 16, 64, 256}
 
@@ -21,7 +21,7 @@ func NewTimer(interrupts *Interrupts) *Timer {
 	}
 }
 
-func (t *Timer) Tick(cycles uint16) {
+func (t *Timer) Step() {
 	t.systemCounter += cycles
 
 	if t.isTimerEnabled() {
@@ -67,7 +67,6 @@ func (t *Timer) Read(address uint16) uint8 {
 func (t *Timer) Write(address uint16, val uint8) {
 	switch address {
 	case 0xFF04:
-		fmt.Printf("[DEBUG] Resetting systemCounter and timerCounter on write to 0xFF04\n")
 		// Writing to DIV resets it
 		t.systemCounter = 0
 		t.timerCounter = 0

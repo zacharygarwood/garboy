@@ -8,15 +8,14 @@ func main() {
 	mmu := NewMMU(cartridge, ppu, timer, interrupts)
 	cpu := NewCPU(mmu, interrupts)
 
+	scheduler := NewScheduler(cpu, ppu, timer)
+
 	cpu.SkipBootROM()
 
 	maxCycles := 80_000_000
 	totalCycles := 0
-
 	for totalCycles < maxCycles {
-		cpu.PrintState()
-		cycles := cpu.Tick()
-		timer.Tick(uint16(cycles))
-		totalCycles += int(cycles)
+		scheduler.Step()
+		totalCycles += 4 // T-cycles
 	}
 }
