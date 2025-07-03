@@ -1,5 +1,23 @@
 package main
 
+const (
+	// Interrupt bits
+	VBlankInterrupt = 0
+	LCDInterrupt    = 1
+	TimerInterrupt  = 2
+	SerialInterrupt = 3
+	JoypadInterrupt = 4
+
+	// Interrupt Sources
+	VBlankInterruptSource = 0x40
+	STATInterruptSource   = 0x48
+	TimerInterruptSource  = 0x50
+	SerialInterruptSource = 0x58
+	JoypadInterruptSource = 0x60
+
+	InterruptMCycles = 5
+)
+
 type Interrupts struct {
 	interruptFlag   *InterruptRegister
 	interruptEnable *InterruptRegister

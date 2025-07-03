@@ -1,6 +1,12 @@
 package main
 
-const cycles = 4
+const (
+	TimerCycles = 4
+
+	// TAC Bits
+	TacEnable          = 2
+	TacClockSelectMask = 0x03
+)
 
 var timerFrequencies = []uint16{1024, 16, 64, 256}
 
@@ -22,17 +28,17 @@ func NewTimer(interrupts *Interrupts) *Timer {
 }
 
 func (t *Timer) Step() {
-	t.systemCounter += cycles
+	t.systemCounter += TimerCycles
 
 	if t.isTimerEnabled() {
-		t.timerCounter += cycles
+		t.timerCounter += TimerCycles
 		frequency := t.timerFrequency()
 
 		if t.timerCounter >= frequency {
 			t.timerCounter -= frequency
 			if t.tima == 0xFF {
 				t.tima = t.tma
-				t.interrupts.Request(2)
+				t.interrupts.Request(TimerInterrupt)
 			} else {
 				t.tima++
 			}
@@ -41,23 +47,23 @@ func (t *Timer) Step() {
 }
 
 func (t *Timer) isTimerEnabled() bool {
-	return IsBitSet(t.tac, 2)
+	return IsBitSet(t.tac, TacEnable)
 }
 
 func (t *Timer) timerFrequency() uint16 {
-	clockSelect := t.tac & 0x03
+	clockSelect := t.tac & TacClockSelectMask
 	return timerFrequencies[clockSelect]
 }
 
 func (t *Timer) Read(address uint16) uint8 {
 	switch address {
-	case 0xFF04:
-		return uint8(t.systemCounter >> 8) // DIV
-	case 0xFF05:
+	case DivAddress:
+		return uint8(t.systemCounter >> 8)
+	case TimaAddress:
 		return t.tima
-	case 0xFF06:
+	case TmaAddress:
 		return t.tma
-	case 0xFF07:
+	case TacAddress:
 		return t.tac
 	default:
 		panic("Invalid address trying to read from Timer")
@@ -66,15 +72,15 @@ func (t *Timer) Read(address uint16) uint8 {
 
 func (t *Timer) Write(address uint16, val uint8) {
 	switch address {
-	case 0xFF04:
+	case DivAddress:
 		// Writing to DIV resets it
 		t.systemCounter = 0
 		t.timerCounter = 0
-	case 0xFF05:
+	case TimaAddress:
 		t.tima = val
-	case 0xFF06:
+	case TmaAddress:
 		t.tma = val
-	case 0xFF07:
+	case TacAddress:
 		t.tac = val & 0x07
 	}
 }

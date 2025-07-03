@@ -2,6 +2,14 @@ package main
 
 import "fmt"
 
+var InterruptSources = []uint16{
+	VBlankInterruptSource,
+	STATInterruptSource,
+	TimerInterruptSource,
+	SerialInterruptSource,
+	JoypadInterruptSource,
+}
+
 type CPU struct {
 	reg        *Registers
 	mmu        *MMU
@@ -41,7 +49,7 @@ func (c *CPU) Step() {
 	}
 
 	if c.handleInterrupts() {
-		c.cyclesRemaining = 5 - 1
+		c.cyclesRemaining = InterruptMCycles - 1
 		return
 	}
 
@@ -92,8 +100,6 @@ func (c *CPU) execute(instr Instruction) uint8 {
 	}
 }
 
-var interruptSources = []uint16{0x40, 0x48, 0x50, 0x58, 0x60}
-
 func (c *CPU) handleInterrupts() bool {
 	ie := c.interrupts.IE()
 	iff := c.interrupts.IF()
@@ -109,14 +115,14 @@ func (c *CPU) handleInterrupts() bool {
 		return false
 	}
 
-	for i := 0; i < len(interruptSources); i++ {
+	for i := 0; i < len(InterruptSources); i++ {
 		interrupt := uint8(i)
 		if IsBitSet(pending, interrupt) {
 			c.interrupts.Clear(interrupt)
 			c.interruptMasterEnable = false
 
 			c.Push16(c.reg.pc.Read())
-			c.reg.pc.Write(interruptSources[i])
+			c.reg.pc.Write(InterruptSources[i])
 			return true
 		}
 	}
