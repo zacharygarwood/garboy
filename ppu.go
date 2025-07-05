@@ -75,9 +75,10 @@ type PPU struct {
 	wy   uint8
 	wx   uint8
 
-	mode        uint8
-	cycles      int
-	framebuffer [ScreenHeight][ScreenWidth]Color
+	mode              uint8
+	cycles            int
+	windowLineCounter uint8
+	framebuffer       [ScreenHeight][ScreenWidth]Color
 
 	interrupts *Interrupts
 }
@@ -148,6 +149,7 @@ func (p *PPU) handleVBlankMode() {
 
 		if p.ly > 153 {
 			p.ly = 0
+			p.windowLineCounter = 0
 			p.enterMode(OamMode)
 			p.updateLyc()
 			p.checkOamInterrupt()
@@ -262,15 +264,10 @@ func (p *PPU) getWindowTileMapBase() uint16 {
 }
 
 func (p *PPU) renderWindow() {
-	windowY := int(p.ly) - int(p.wy)
-	if windowY < 0 {
-		return
-	}
-
 	tileMapBase := p.getWindowTileMapBase()
 
-	tileRow := windowY / TileSize
-	pixelRow := windowY % TileSize
+	tileRow := int(p.windowLineCounter) / TileSize
+	pixelRow := int(p.windowLineCounter) % TileSize
 
 	windowStartX := int(p.wx) - 7
 	if windowStartX < 0 {
@@ -288,6 +285,7 @@ func (p *PPU) renderWindow() {
 		color := p.getTilePixel(tileIndex, pixelCol, pixelRow)
 		p.framebuffer[p.ly][screenX] = p.applyBackgroundPalette(color)
 	}
+	p.windowLineCounter++
 }
 
 func (p *PPU) applyBackgroundPalette(color Color) Color {
@@ -548,6 +546,7 @@ func (p *PPU) Reset() {
 	p.wx = 0
 	p.mode = 0
 	p.cycles = 0
+	p.windowLineCounter = 0
 
 	p.vram = NewRAM(0x2000)
 	p.oam = NewRAM(0xA0)
@@ -560,6 +559,6 @@ func (p *PPU) Reset() {
 }
 
 func (p *PPU) PrintState() {
-	fmt.Printf("PPU: LCDC=%x LY:%x LYC:%x MODE:%x OBP0:%x OBP1:%x SCX:%x SCY:%x STAT:%x WX:%x WY:%x\n",
-		p.lcdc, p.ly, p.lyc, p.mode, p.obp0, p.obp1, p.scx, p.scy, p.stat, p.wx, p.wy)
+	fmt.Printf("PPU: LCDC=%x LY:%x LYC:%x MODE:%x OBP0:%x OBP1:%x SCX:%x SCY:%x STAT:%x WX:%x WY:%x windowLineCounter: %x\n",
+		p.lcdc, p.ly, p.lyc, p.mode, p.obp0, p.obp1, p.scx, p.scy, p.stat, p.wx, p.wy, p.windowLineCounter)
 }
