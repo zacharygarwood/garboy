@@ -518,6 +518,7 @@ func (p *PPU) Write(address uint16, val uint8) {
 
 		if prevEnabled && !p.isLcdEnabled() {
 			p.ly = 0
+			p.windowLineCounter = 0
 			p.enterMode(HBlankMode)
 		}
 	case LcdStatusAddress:
