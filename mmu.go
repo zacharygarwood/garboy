@@ -91,7 +91,7 @@ func NewMMU(cart *Cartridge, ppu *PPU, timer *Timer, interrupts *Interrupts) *MM
 
 func (m *MMU) Read(address uint16) byte {
 	switch {
-	case address < 0xFF && m.bootROMEnabled:
+	case address <= 0xFF && m.bootROMEnabled:
 		return m.bootROM.Read(address)
 	case address < RomBank1Address:
 		return m.cartridge.ReadROM(address)
