@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"sort"
+)
 
 const (
 	// PPU constants
@@ -57,6 +60,11 @@ type Sprite struct {
 	x         uint8
 	tileIndex uint8
 	flags     uint8
+}
+
+type SpriteWithIndex struct {
+	sprite Sprite
+	index  int
 }
 
 type PPU struct {
@@ -295,15 +303,30 @@ func (p *PPU) applyBackgroundPalette(color Color) Color {
 
 func (p *PPU) renderSprites() {
 	spriteHeight := p.getSpriteHeight()
-	spritesRendered := 0
+	visibleSprites := make([]SpriteWithIndex, 0, MaxSprites)
 
-	for spriteIndex := MaxSprites - 1; spriteIndex >= 0 && spritesRendered < SpritesPerLine; spriteIndex-- {
-		sprite := p.getSprite(spriteIndex)
-
-		if p.isSpriteOnCurrentScanline(sprite, spriteHeight) {
-			p.renderSprite(sprite, spriteHeight)
-			spritesRendered++
+	for spriteIndex := 0; spriteIndex < MaxSprites; spriteIndex++ {
+		if len(visibleSprites) >= SpritesPerLine {
+			break
 		}
+
+		sprite := p.getSprite(spriteIndex)
+		if p.isSpriteOnCurrentScanline(sprite, spriteHeight) {
+			visibleSprites = append(visibleSprites, SpriteWithIndex{sprite, spriteIndex})
+		}
+	}
+
+	sort.Slice(visibleSprites, func(i, j int) bool {
+		s1 := visibleSprites[i]
+		s2 := visibleSprites[j]
+		if s1.sprite.x != s2.sprite.x {
+			return s1.sprite.x > s2.sprite.x
+		}
+		return s1.index > s2.index
+	})
+
+	for _, sw := range visibleSprites {
+		p.renderSprite(sw.sprite, spriteHeight)
 	}
 }
 
