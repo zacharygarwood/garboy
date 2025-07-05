@@ -22,7 +22,7 @@ var BOOT_ROM = [256]byte{
 }
 
 const (
-	// *Start* of memory addresses
+	// Start of memory addresses
 	RomBank1Address    = 0x4000
 	VramAddress        = 0x8000
 	ExternalRamAddress = 0xA000
@@ -33,6 +33,10 @@ const (
 	IoRegistersAddress = 0xFF00
 	HramAddress        = 0xFF80
 
+	// End of memory addresses
+	VramEndAddress = 0x9FFF
+	OamEndAddress  = 0xFE9F
+
 	// Timer register addresses
 	DivAddress  = 0xFF04
 	TimaAddress = 0xFF05
@@ -42,6 +46,19 @@ const (
 	// Interrupt addresses
 	InterruptFlagAddress   = 0xFF0F
 	InterruptEnableAddress = 0xFFFF
+
+	// PPU addresses
+	LcdControlAddress  = 0xFF40
+	LcdStatusAddress   = 0xFF41
+	ScrollYAddress     = 0xFF42
+	ScrollXAddress     = 0xFF43
+	LyAddress          = 0xFF44
+	LycAddress         = 0xFF45
+	BgPaletteAddress   = 0xFF47
+	ObP0PaletteAddress = 0xFF48
+	ObP1PaletteAddress = 0xFF49
+	WindowYAddress     = 0xFF4A
+	WindowXAddress     = 0xFF4B
 )
 
 type MMU struct {
@@ -81,7 +98,7 @@ func (m *MMU) Read(address uint16) byte {
 	case address < VramAddress:
 		return m.cartridge.ReadROM(address)
 	case address < ExternalRamAddress:
-		return m.ppu.ReadVRAM(address - VramAddress)
+		return m.ppu.Read(address)
 	case address < WramAddress:
 		return m.cartridge.ReadRAM(address - ExternalRamAddress)
 	case address < EchoRamAddress:
@@ -89,11 +106,13 @@ func (m *MMU) Read(address uint16) byte {
 	case address < OamAddress:
 		return m.wram.Read(address - EchoRamAddress)
 	case address < NotUsableAddress:
-		return m.ppu.ReadOAM(address - OamAddress)
+		return m.ppu.Read(address)
 	case address < IoRegistersAddress:
 		return 0xFF // Not usable
 	case address >= DivAddress && address <= TacAddress:
 		return m.timer.Read(address)
+	case address >= LcdControlAddress && address <= WindowXAddress:
+		return m.ppu.Read(address)
 	case address == InterruptFlagAddress:
 		return m.interrupts.IF()
 	case address == 0xFF44: // FIXME: Only used for GB Doctor's tests
@@ -116,7 +135,7 @@ func (m *MMU) Write(address uint16, val byte) {
 	case address < VramAddress:
 		m.cartridge.WriteROM(address-RomBank1Address, val)
 	case address < ExternalRamAddress:
-		m.ppu.WriteVRAM(address-VramAddress, val)
+		m.ppu.Write(address, val)
 	case address < WramAddress:
 		m.cartridge.WriteRAM(address-ExternalRamAddress, val)
 	case address < EchoRamAddress:
@@ -124,7 +143,7 @@ func (m *MMU) Write(address uint16, val byte) {
 	case address < OamAddress:
 		m.wram.Write(address-EchoRamAddress, val)
 	case address < NotUsableAddress:
-		m.ppu.WriteOAM(address-OamAddress, val)
+		m.ppu.Write(address, val)
 	case address < IoRegistersAddress:
 		return // Not usable
 	case address == 0xFF02 && val == 0x81: // FIXME: Used for Blargg's CPU tests
@@ -132,6 +151,8 @@ func (m *MMU) Write(address uint16, val byte) {
 		fmt.Printf("%c", out)
 	case address >= DivAddress && address <= TacAddress:
 		m.timer.Write(address, val)
+	case address >= LcdControlAddress && address <= WindowXAddress:
+		m.ppu.Write(address, val)
 	case address == InterruptFlagAddress:
 		m.interrupts.Write(address, val)
 	case address == 0xFF50 && m.bootROMEnabled && val != 0:

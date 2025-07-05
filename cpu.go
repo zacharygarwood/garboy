@@ -4,7 +4,7 @@ import "fmt"
 
 var InterruptSources = []uint16{
 	VBlankInterruptSource,
-	STATInterruptSource,
+	StatInterruptSource,
 	TimerInterruptSource,
 	SerialInterruptSource,
 	JoypadInterruptSource,
