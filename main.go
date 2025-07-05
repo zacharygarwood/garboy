@@ -16,12 +16,10 @@ func main() {
 
 	interrupts := NewInterrupts()
 	ppu := NewPPU(interrupts)
+	display := NewDisplay(ppu)
 	timer := NewTimer(interrupts)
 	mmu := NewMMU(cartridge, ppu, timer, interrupts)
 	cpu := NewCPU(mmu, interrupts)
-
-	framebuffer := ppu.GetFrameBuffer()
-	display := NewDisplay(framebuffer)
 
 	scheduler := NewScheduler(cpu, ppu, timer)
 

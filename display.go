@@ -13,14 +13,14 @@ const (
 )
 
 type Display struct {
-	framebuffer *[ScreenHeight][ScreenWidth]Color
-	screen      *ebiten.Image
+	ppu    *PPU
+	screen *ebiten.Image
 }
 
-func NewDisplay(framebuffer *[ScreenHeight][ScreenWidth]Color) *Display {
+func NewDisplay(ppu *PPU) *Display {
 	return &Display{
-		framebuffer: framebuffer,
-		screen:      ebiten.NewImage(ScreenWidth, ScreenHeight),
+		ppu:    ppu,
+		screen: ebiten.NewImage(ScreenWidth, ScreenHeight),
 	}
 }
 
@@ -50,9 +50,13 @@ func (d *Display) Layout(outsideWidth int, outsideHeight int) (int, int) {
 }
 
 func (d *Display) updateScreen() {
+	d.ppu.mu.Lock()
+	defer d.ppu.mu.Unlock()
+
+	framebuffer := d.ppu.GetFrameBuffer()
 	for y := 0; y < ScreenHeight; y++ {
 		for x := 0; x < ScreenWidth; x++ {
-			gbColor := d.framebuffer[y][x]
+			gbColor := framebuffer[y][x]
 			rgbaColor := gameBoyColorToRgba(gbColor)
 			d.screen.Set(x, y, rgbaColor)
 		}

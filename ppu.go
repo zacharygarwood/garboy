@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"sort"
+	"sync"
 )
 
 const (
@@ -86,21 +87,26 @@ type PPU struct {
 	mode              uint8
 	cycles            int
 	windowLineCounter uint8
-	framebuffer       [ScreenHeight][ScreenWidth]Color
+
+	frontBuffer *[ScreenHeight][ScreenWidth]Color
+	backBuffer  *[ScreenHeight][ScreenWidth]Color
+	mu          sync.Mutex
 
 	interrupts *Interrupts
 }
 
 func NewPPU(interrupts *Interrupts) *PPU {
 	return &PPU{
-		vram:       NewRAM(0x2000),
-		oam:        NewRAM(0xA0),
-		lcdc:       0x91,
-		stat:       0x85,
-		bgp:        0xFC,
-		obp0:       0xFF,
-		obp1:       0xFF,
-		interrupts: interrupts,
+		vram:        NewRAM(0x2000),
+		oam:         NewRAM(0xA0),
+		lcdc:        0x91,
+		stat:        0x85,
+		bgp:         0xFC,
+		obp0:        0xFF,
+		obp1:        0xFF,
+		frontBuffer: new([ScreenHeight][ScreenWidth]Color),
+		backBuffer:  new([ScreenHeight][ScreenWidth]Color),
+		interrupts:  interrupts,
 	}
 }
 
@@ -156,6 +162,10 @@ func (p *PPU) handleVBlankMode() {
 		p.moveToNextScanline()
 
 		if p.ly > 153 {
+			p.mu.Lock()
+			p.frontBuffer, p.backBuffer = p.backBuffer, p.frontBuffer
+			p.mu.Unlock()
+
 			p.ly = 0
 			p.windowLineCounter = 0
 			p.enterMode(OamMode)
@@ -229,7 +239,7 @@ func (p *PPU) renderScanline() {
 
 func (p *PPU) clearScanline() {
 	for x := 0; x < ScreenWidth; x++ {
-		p.framebuffer[p.ly][x] = 0
+		p.backBuffer[p.ly][x] = 0
 	}
 }
 
@@ -253,7 +263,7 @@ func (p *PPU) renderBackground() {
 		tileIndex := p.readVram(tileMapAddress)
 
 		color := p.getTilePixel(tileIndex, pixelCol, pixelRow)
-		p.framebuffer[p.ly][screenX] = p.applyBackgroundPalette(color)
+		p.backBuffer[p.ly][screenX] = p.applyBackgroundPalette(color)
 	}
 }
 
@@ -291,7 +301,7 @@ func (p *PPU) renderWindow() {
 		tileIndex := p.readVram(tileMapAddress)
 
 		color := p.getTilePixel(tileIndex, pixelCol, pixelRow)
-		p.framebuffer[p.ly][screenX] = p.applyBackgroundPalette(color)
+		p.backBuffer[p.ly][screenX] = p.applyBackgroundPalette(color)
 	}
 	p.windowLineCounter++
 }
@@ -392,12 +402,12 @@ func (p *PPU) renderSprite(sprite Sprite, spriteHeight int) {
 			continue
 		}
 
-		if IsBitSet(sprite.flags, SpritePriority) && p.framebuffer[p.ly][screenX] != 0 {
+		if IsBitSet(sprite.flags, SpritePriority) && p.backBuffer[p.ly][screenX] != 0 {
 			continue
 		}
 
 		paletteColor := p.applySpritePalette(sprite, color)
-		p.framebuffer[p.ly][screenX] = paletteColor
+		p.backBuffer[p.ly][screenX] = paletteColor
 	}
 }
 
@@ -553,7 +563,7 @@ func (p *PPU) Write(address uint16, val uint8) {
 }
 
 func (p *PPU) GetFrameBuffer() *[ScreenHeight][ScreenWidth]Color {
-	return &p.framebuffer
+	return p.frontBuffer
 }
 
 func (p *PPU) Reset() {
@@ -575,9 +585,10 @@ func (p *PPU) Reset() {
 	p.vram = NewRAM(0x2000)
 	p.oam = NewRAM(0xA0)
 
-	for y := range p.framebuffer {
-		for x := range p.framebuffer[y] {
-			p.framebuffer[y][x] = 0
+	for y := range p.backBuffer {
+		for x := range p.backBuffer[y] {
+			p.backBuffer[y][x] = 0
+			p.frontBuffer[y][x] = 0
 		}
 	}
 }
