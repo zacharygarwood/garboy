@@ -12,7 +12,7 @@ var InterruptSources = []uint16{
 
 type CPU struct {
 	reg        *Registers
-	mmu        *MMU
+	mmu        MmuInterface
 	interrupts *Interrupts
 
 	branched              bool
@@ -24,7 +24,7 @@ type CPU struct {
 	cyclesRemaining uint8
 }
 
-func NewCPU(mmu *MMU, interrupts *Interrupts) *CPU {
+func NewCPU(mmu MmuInterface, interrupts *Interrupts) *CPU {
 	return &CPU{
 		reg:                   NewRegisters(),
 		mmu:                   mmu,
@@ -156,12 +156,19 @@ func (c *CPU) SkipBootROM() {
 	c.reg.sp.Write(0xFFFE)
 	c.reg.pc.Write(0x0100)
 
-	c.mmu.bootROMEnabled = false
+	c.mmu.SetBootRomEnabled(false)
 }
 
 func (c *CPU) PrintState() {
 	pc := c.reg.pc.Read()
 	fmt.Printf("A:%.2X F:%.2X B:%.2X C:%.2X D:%.2X E:%.2X H:%.2X L:%.2X SP:%.4X PC:%.4X PCMEM:%02X,%02X,%02X,%02X\n",
+		c.reg.a.Read(), c.reg.f.Read(), c.reg.b.Read(), c.reg.c.Read(), c.reg.d.Read(), c.reg.e.Read(), c.reg.h.Read(),
+		c.reg.l.Read(), c.reg.sp.Read(), pc, c.byteAt(pc).Read(), c.byteAt(pc+1).Read(), c.byteAt(pc+2).Read(), c.byteAt(pc+3).Read())
+}
+
+func (c *CPU) PrintStateDecimal() {
+	pc := c.reg.pc.Read()
+	fmt.Printf("A:%d F:%d B:%d C:%d D:%d E:%d H:%d L:%d SP:%d PC:%d PCMEM:%d,%d,%d,%d\n",
 		c.reg.a.Read(), c.reg.f.Read(), c.reg.b.Read(), c.reg.c.Read(), c.reg.d.Read(), c.reg.e.Read(), c.reg.h.Read(),
 		c.reg.l.Read(), c.reg.sp.Read(), pc, c.byteAt(pc).Read(), c.byteAt(pc+1).Read(), c.byteAt(pc+2).Read(), c.byteAt(pc+3).Read())
 }

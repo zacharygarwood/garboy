@@ -12,7 +12,7 @@ var (
 )
 
 func main() {
-	cartridge := NewCartridge("./test_roms/dmg-acid2.gb", 0x2000)
+	cartridge := NewCartridge("./test_roms/02-interrupts.gb", 0x2000)
 
 	interrupts := NewInterrupts()
 	ppu := NewPPU(interrupts)
