@@ -5,14 +5,14 @@ import (
 )
 
 var (
-	MCyclesPerSecond = 1048576.0
-	Fps              = 59.7
-	CyclesPerFrame   = int(MCyclesPerSecond / Fps)
-	TimePerFrame     = time.Second / time.Duration(Fps)
+	CyclesPerSecond = 4194304.0
+	Fps             = 59.7
+	CyclesPerFrame  = int(CyclesPerSecond / Fps)
+	TimePerFrame    = time.Second / time.Duration(Fps)
 )
 
 func main() {
-	cartridge := NewCartridge("./test_roms/02-interrupts.gb", 0x2000)
+	cartridge := NewCartridge("./test_roms/manual/dmg-acid2.gb", 0x2000)
 
 	interrupts := NewInterrupts()
 	ppu := NewPPU(interrupts)
@@ -23,7 +23,7 @@ func main() {
 
 	scheduler := NewScheduler(cpu, ppu, timer)
 
-	//cpu.SkipBootROM()
+	cpu.SkipBootROM()
 
 	go RunDisplay(display)
 

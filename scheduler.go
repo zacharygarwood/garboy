@@ -15,7 +15,7 @@ func NewScheduler(cpu *CPU, ppu *PPU, timer *Timer) *Scheduler {
 }
 
 func (s *Scheduler) Step() {
+	s.cpu.Step()
 	s.timer.Step()
 	s.ppu.Step()
-	s.cpu.Step()
 }

@@ -1,8 +1,6 @@
 package main
 
 const (
-	TimerCycles = 4
-
 	// TAC Bits
 	TacEnable          = 2
 	TacClockSelectMask = 0x03
@@ -28,10 +26,10 @@ func NewTimer(interrupts *Interrupts) *Timer {
 }
 
 func (t *Timer) Step() {
-	t.systemCounter += TimerCycles
+	t.systemCounter++
 
 	if t.isTimerEnabled() {
-		t.timerCounter += TimerCycles
+		t.timerCounter++
 		frequency := t.timerFrequency()
 
 		if t.timerCounter >= frequency {

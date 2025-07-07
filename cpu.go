@@ -2,6 +2,10 @@ package main
 
 import "fmt"
 
+const (
+	InterruptCycles = 20
+)
+
 var InterruptSources = []uint16{
 	VBlankInterruptSource,
 	StatInterruptSource,
@@ -49,7 +53,7 @@ func (c *CPU) Step() {
 	}
 
 	if c.handleInterrupts() {
-		c.cyclesRemaining = InterruptMCycles - 1
+		c.cyclesRemaining = InterruptCycles - 1
 		return
 	}
 

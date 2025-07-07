@@ -14,8 +14,6 @@ const (
 	TimerInterruptSource  = 0x50
 	SerialInterruptSource = 0x58
 	JoypadInterruptSource = 0x60
-
-	InterruptMCycles = 5
 )
 
 type Interrupts struct {
