@@ -115,7 +115,7 @@ func (p *PPU) Step() {
 		return
 	}
 
-	p.cycles += 4
+	p.cycles++
 
 	switch p.mode {
 	case OamMode:

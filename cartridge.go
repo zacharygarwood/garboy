@@ -3,33 +3,46 @@ package main
 import "os"
 
 type Cartridge struct {
-	rom Memory
-	ram Memory
+	mbc    MBC
+	header CartridgeHeader
 }
 
-func NewCartridge(romPath string, ramSize int) *Cartridge {
+type CartridgeHeader struct {
+	CartType uint8
+	RomSize  uint8
+	RamSize  uint8
+}
+
+func NewCartridge(romPath string) *Cartridge {
 	data, err := os.ReadFile(romPath)
 	if err != nil {
 		panic(err)
 	}
+
+	header := CartridgeHeader{
+		CartType: data[0x147],
+		RomSize:  data[0x148],
+		RamSize:  data[0x149],
+	}
+
 	return &Cartridge{
-		rom: NewROM(data),
-		ram: NewRAM(ramSize),
+		mbc:    NewMBC(data, header),
+		header: header,
 	}
 }
 
-func (c *Cartridge) ReadROM(offset uint16) byte {
-	return c.rom.Read(offset)
+func (c *Cartridge) ReadROM(address uint16) byte {
+	return c.mbc.Read(address)
 }
 
-func (c *Cartridge) WriteROM(offset uint16, val byte) {
-	c.rom.Write(offset, val)
+func (c *Cartridge) WriteROM(address uint16, val byte) {
+	c.mbc.Write(address, val)
 }
 
-func (c *Cartridge) ReadRAM(offset uint16) byte {
-	return c.ram.Read(offset)
+func (c *Cartridge) ReadRAM(address uint16) byte {
+	return c.mbc.Read(address)
 }
 
-func (c *Cartridge) WriteRAM(offset uint16, val byte) {
-	c.ram.Write(offset, val)
+func (c *Cartridge) WriteRAM(address uint16, val byte) {
+	c.mbc.Write(address, val)
 }

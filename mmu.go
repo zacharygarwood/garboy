@@ -93,18 +93,14 @@ func (m *MMU) Read(address uint16) byte {
 	switch {
 	case address <= 0xFF && m.bootROMEnabled:
 		return m.bootROM.Read(address)
-	case address < RomBank1Address:
-		return m.cartridge.ReadROM(address)
 	case address < VramAddress:
 		return m.cartridge.ReadROM(address)
 	case address < ExternalRamAddress:
 		return m.ppu.Read(address)
 	case address < WramAddress:
-		return m.cartridge.ReadRAM(address - ExternalRamAddress)
-	case address < EchoRamAddress:
-		return m.wram.Read(address - WramAddress)
-	case address < OamAddress:
-		return m.wram.Read(address - EchoRamAddress)
+		return m.cartridge.ReadRAM(address)
+	case address >= WramAddress && address < OamAddress:
+		return m.wram.Read(address & 0x1FFF)
 	case address < NotUsableAddress:
 		return m.ppu.Read(address)
 	case address < IoRegistersAddress:
@@ -130,18 +126,14 @@ func (m *MMU) Read(address uint16) byte {
 
 func (m *MMU) Write(address uint16, val byte) {
 	switch {
-	case address < RomBank1Address:
-		m.cartridge.WriteROM(address, val)
 	case address < VramAddress:
-		m.cartridge.WriteROM(address-RomBank1Address, val)
+		m.cartridge.WriteROM(address, val)
 	case address < ExternalRamAddress:
 		m.ppu.Write(address, val)
 	case address < WramAddress:
-		m.cartridge.WriteRAM(address-ExternalRamAddress, val)
-	case address < EchoRamAddress:
-		m.wram.Write(address-WramAddress, val)
-	case address < OamAddress:
-		m.wram.Write(address-EchoRamAddress, val)
+		m.cartridge.WriteRAM(address, val)
+	case address >= WramAddress && address < OamAddress:
+		m.wram.Write(address&0x1FFF, val)
 	case address < NotUsableAddress:
 		m.ppu.Write(address, val)
 	case address < IoRegistersAddress:

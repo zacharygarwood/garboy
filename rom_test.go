@@ -22,7 +22,7 @@ func runRomTest(t *testing.T, romPath string) {
 		os.Stdout = w
 	}
 
-	cartridge := NewCartridge(romPath, 0)
+	cartridge := NewCartridge(romPath)
 	interrupts := NewInterrupts()
 	ppu := NewPPU(interrupts)
 	timer := NewTimer(interrupts)
