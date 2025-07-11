@@ -12,7 +12,7 @@ var (
 )
 
 func main() {
-	cartridge := NewCartridge("./test_roms/manual/dmg-acid2.gb")
+	cartridge := NewCartridge("./roms/tetris.gb")
 
 	interrupts := NewInterrupts()
 	ppu := NewPPU(interrupts)
@@ -23,7 +23,7 @@ func main() {
 
 	scheduler := NewScheduler(cpu, ppu, timer)
 
-	//cpu.SkipBootROM()
+	cpu.SkipBootROM()
 
 	go RunDisplay(display)
 
