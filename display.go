@@ -65,13 +65,13 @@ func (d *Display) updateScreen() {
 func gameBoyColorToRgba(gbColor Color) color.RGBA {
 	switch gbColor {
 	case 0:
-		return color.RGBA{155, 188, 15, 255}
+		return color.RGBA{197, 219, 212, 255}
 	case 1:
-		return color.RGBA{139, 172, 15, 255}
+		return color.RGBA{119, 142, 152, 255}
 	case 2:
-		return color.RGBA{48, 98, 48, 255}
+		return color.RGBA{65, 72, 93, 255}
 	case 3:
-		return color.RGBA{15, 56, 15, 255}
+		return color.RGBA{34, 30, 49, 255}
 	default:
 		return color.RGBA{0, 0, 0, 255}
 	}
