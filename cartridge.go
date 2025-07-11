@@ -31,18 +31,10 @@ func NewCartridge(romPath string) *Cartridge {
 	}
 }
 
-func (c *Cartridge) ReadROM(address uint16) byte {
+func (c *Cartridge) Read(address uint16) byte {
 	return c.mbc.Read(address)
 }
 
-func (c *Cartridge) WriteROM(address uint16, val byte) {
-	c.mbc.Write(address, val)
-}
-
-func (c *Cartridge) ReadRAM(address uint16) byte {
-	return c.mbc.Read(address)
-}
-
-func (c *Cartridge) WriteRAM(address uint16, val byte) {
+func (c *Cartridge) Write(address uint16, val byte) {
 	c.mbc.Write(address, val)
 }

@@ -78,6 +78,7 @@ type PPU struct {
 	scx  uint8
 	ly   uint8
 	lyc  uint8
+	dma  uint8
 	bgp  uint8
 	obp0 uint8
 	obp1 uint8
@@ -498,6 +499,8 @@ func (p *PPU) Read(address uint16) uint8 {
 		return p.ly
 	case LycAddress:
 		return p.lyc
+	case DmaAddress:
+		return p.dma
 	case WindowYAddress:
 		return p.wy
 	case WindowXAddress:
@@ -540,6 +543,7 @@ func (p *PPU) Write(address uint16, val uint8) {
 	case LycAddress:
 		p.lyc = val
 		p.updateLyc()
+		// DMA Transfer handled in MMU
 	case WindowYAddress:
 		p.wy = val
 	case WindowXAddress:

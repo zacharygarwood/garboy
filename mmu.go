@@ -55,6 +55,7 @@ const (
 	ScrollXAddress     = 0xFF43
 	LyAddress          = 0xFF44
 	LycAddress         = 0xFF45
+	DmaAddress         = 0xFF46
 	BgPaletteAddress   = 0xFF47
 	ObP0PaletteAddress = 0xFF48
 	ObP1PaletteAddress = 0xFF49
@@ -144,6 +145,8 @@ func (m *MMU) Write(address uint16, val byte) {
 		m.timer.Write(address, val)
 	case address == InterruptFlagAddress:
 		m.interrupts.Write(address, val)
+	case address == DmaAddress:
+		m.DmaTransfer(val)
 	case address >= LcdControlAddress && address <= WindowXAddress:
 		m.ppu.Write(address, val)
 	case address == 0xFF50 && m.bootROMEnabled && val != 0:
@@ -176,6 +179,17 @@ func (m *MMU) WriteWord(address uint16, val uint16) {
 
 func (m *MMU) SetBootRomEnabled(val bool) {
 	m.bootROMEnabled = val
+}
+
+func (m *MMU) DmaTransfer(val uint8) {
+	src := uint16(val) * 0x100
+	dst := uint16(0xFE00)
+
+	segmentSize := uint16(0xA0)
+	for i := uint16(0); i < segmentSize; i++ {
+		transfer := m.Read(src + i)
+		m.Write(dst+i, transfer)
+	}
 }
 
 // TODO: Move to separate module. These are used for the cpu single step instr tests
