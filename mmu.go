@@ -95,27 +95,21 @@ func (m *MMU) Read(address uint16) byte {
 	case address <= 0xFF && m.bootROMEnabled:
 		return m.bootROM.Read(address)
 	case address < VramAddress:
-		return m.cartridge.ReadROM(address)
+		return m.cartridge.Read(address)
 	case address < ExternalRamAddress:
 		return m.ppu.Read(address)
 	case address < WramAddress:
-		return m.cartridge.ReadRAM(address)
-	case address < OamAddress:
+		return m.cartridge.Read(address)
+	case address >= WramAddress && address < OamAddress:
 		return m.wram.Read(address & 0x1FFF)
 	case address < NotUsableAddress:
 		return m.ppu.Read(address)
 	case address < IoRegistersAddress:
 		return 0xFF // Not usable
-	case address == IoRegistersAddress:
-		return 0xFF // FIXME: Hard coded until joypad implemented
-	case address == SerialBufferAddress:
-		return 0x00 // Not implemented
 	case address >= DivAddress && address <= TacAddress:
 		return m.timer.Read(address)
 	case address == InterruptFlagAddress:
 		return m.interrupts.IF()
-	case address < LcdControlAddress:
-		return 0x00 // Sound not implemented
 	case address >= LcdControlAddress && address <= WindowXAddress:
 		return m.ppu.Read(address)
 	case address < HramAddress:
@@ -125,28 +119,24 @@ func (m *MMU) Read(address uint16) byte {
 	case address == InterruptEnableAddress:
 		return m.interrupts.IE()
 	default:
-		panic("Invalid read from MMU")
+		panic("Should not be reading past 0xFFFF")
 	}
 }
 
 func (m *MMU) Write(address uint16, val byte) {
 	switch {
 	case address < VramAddress:
-		m.cartridge.WriteROM(address, val)
+		m.cartridge.Write(address, val)
 	case address < ExternalRamAddress:
 		m.ppu.Write(address, val)
 	case address < WramAddress:
-		m.cartridge.WriteRAM(address, val)
-	case address < OamAddress:
+		m.cartridge.Write(address, val)
+	case address >= WramAddress && address < OamAddress:
 		m.wram.Write(address&0x1FFF, val)
 	case address < NotUsableAddress:
 		m.ppu.Write(address, val)
 	case address < IoRegistersAddress:
 		return // Not usable
-	case address == IoRegistersAddress:
-		return // FIXME: Joypad not implemented yet
-	case address == SerialBufferAddress:
-		return // Serial not implemented
 	case address == 0xFF02 && val == 0x81: // FIXME: Used for Blargg's CPU tests
 		out := m.Read(0xFF01)
 		fmt.Printf("%c", out)
@@ -154,8 +144,6 @@ func (m *MMU) Write(address uint16, val byte) {
 		m.timer.Write(address, val)
 	case address == InterruptFlagAddress:
 		m.interrupts.Write(address, val)
-	case address < LcdControlAddress:
-		return // Sound not implemented
 	case address >= LcdControlAddress && address <= WindowXAddress:
 		m.ppu.Write(address, val)
 	case address == 0xFF50 && m.bootROMEnabled && val != 0:
