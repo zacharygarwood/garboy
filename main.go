@@ -12,7 +12,7 @@ var (
 )
 
 func main() {
-	cartridge := NewCartridge("./roms/tetris.gb")
+	cartridge := NewCartridge("./roms/pokemon-red.gb")
 
 	interrupts := NewInterrupts()
 	ppu := NewPPU(interrupts)
@@ -30,8 +30,8 @@ func main() {
 
 	for {
 		frameStartTime := time.Now()
-		for cyclesThisFrame := 0; cyclesThisFrame < CyclesPerFrame; cyclesThisFrame++ {
-			scheduler.Step()
+		for cyclesThisFrame := 0; cyclesThisFrame < CyclesPerFrame; {
+			cyclesThisFrame += int(scheduler.Step())
 		}
 		elapsedTime := time.Since(frameStartTime)
 
