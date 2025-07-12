@@ -107,6 +107,8 @@ func (m *MMU) Read(address uint16) byte {
 		return m.ppu.Read(address)
 	case address < IoRegistersAddress:
 		return 0xFF // Not usable
+	case address == IoRegistersAddress:
+		return 0xFF // TODO: Joypad not implemented
 	case address >= DivAddress && address <= TacAddress:
 		return m.timer.Read(address)
 	case address == InterruptFlagAddress:
@@ -138,6 +140,8 @@ func (m *MMU) Write(address uint16, val byte) {
 		m.ppu.Write(address, val)
 	case address < IoRegistersAddress:
 		return // Not usable
+	case address == IoRegistersAddress:
+		return // TODO: Joypad not implemented yet
 	case address == 0xFF02 && val == 0x81: // FIXME: Used for Blargg's CPU tests
 		out := m.Read(0xFF01)
 		fmt.Printf("%c", out)

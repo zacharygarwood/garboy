@@ -86,7 +86,7 @@ type PPU struct {
 	wx   uint8
 
 	mode              uint8
-	cycles            int
+	cycles            uint16
 	windowLineCounter uint8
 
 	frontBuffer *[ScreenHeight][ScreenWidth]Color
@@ -111,12 +111,13 @@ func NewPPU(interrupts *Interrupts) *PPU {
 	}
 }
 
-func (p *PPU) Step() {
+func (p *PPU) Step(cycles uint16) {
 	if !p.isLcdEnabled() {
+		fmt.Printf("LCD disabled\n")
 		return
 	}
 
-	p.cycles++
+	p.cycles += cycles
 
 	switch p.mode {
 	case OamMode:

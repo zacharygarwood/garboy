@@ -9,11 +9,11 @@ type Instruction struct {
 }
 
 type Cycles struct {
-	branched uint8
-	normal   uint8
+	branched uint16
+	normal   uint16
 }
 
-func NewCycles(normal uint8, branched uint8) Cycles {
+func NewCycles(normal uint16, branched uint16) Cycles {
 	return Cycles{
 		normal:   normal,
 		branched: branched,

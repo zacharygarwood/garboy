@@ -4,6 +4,7 @@ import "fmt"
 
 const (
 	InterruptCycles = 20
+	HaltedCycles    = 4 // Treated as NOP
 )
 
 var InterruptSources = []uint16{
@@ -24,8 +25,7 @@ type CPU struct {
 	haltBug               bool
 	interruptMasterEnable bool // IME
 
-	imeDelay        uint8
-	cyclesRemaining uint8
+	imeDelay uint8
 }
 
 func NewCPU(mmu MmuInterface, interrupts *Interrupts) *CPU {
@@ -39,12 +39,7 @@ func NewCPU(mmu MmuInterface, interrupts *Interrupts) *CPU {
 	}
 }
 
-func (c *CPU) Step() {
-	if c.cyclesRemaining > 0 {
-		c.cyclesRemaining--
-		return
-	}
-
+func (c *CPU) Step() uint16 {
 	if c.imeDelay > 0 {
 		c.imeDelay--
 		if c.imeDelay == 0 {
@@ -53,19 +48,18 @@ func (c *CPU) Step() {
 	}
 
 	if c.handleInterrupts() {
-		c.cyclesRemaining = InterruptCycles - 1
-		return
+		return InterruptCycles
 	}
 
 	if c.halted {
-		return
+		return HaltedCycles
 	}
 
 	//c.PrintState()
 
 	opcode := c.fetch()
 	instruction := c.decode(opcode)
-	c.cyclesRemaining = c.execute(instruction) - 1
+	return c.execute(instruction)
 }
 
 // Fetches the opcode at PC
@@ -93,7 +87,7 @@ func (c *CPU) decode(opcode byte) Instruction {
 }
 
 // Executes the passed instruction
-func (c *CPU) execute(instr Instruction) uint8 {
+func (c *CPU) execute(instr Instruction) uint16 {
 	c.branched = false // Always set to false before executing
 	instr.Execute(&instr, c)
 
@@ -165,7 +159,7 @@ func (c *CPU) SkipBootROM() {
 
 func (c *CPU) PrintState() {
 	pc := c.reg.pc.Read()
-	fmt.Printf("A:%.2X F:%.2X B:%.2X C:%.2X D:%.2X E:%.2X H:%.2X L:%.2X SP:%.4X PC:%.4X PCMEM:%02X,%02X,%02X,%02X\n",
+	fmt.Printf("[CPU] A:%.2X F:%.2X B:%.2X C:%.2X D:%.2X E:%.2X H:%.2X L:%.2X SP:%.4X PC:%.4X PCMEM:%02X,%02X,%02X,%02X\n",
 		c.reg.a.Read(), c.reg.f.Read(), c.reg.b.Read(), c.reg.c.Read(), c.reg.d.Read(), c.reg.e.Read(), c.reg.h.Read(),
 		c.reg.l.Read(), c.reg.sp.Read(), pc, c.byteAt(pc).Read(), c.byteAt(pc+1).Read(), c.byteAt(pc+2).Read(), c.byteAt(pc+3).Read())
 }
