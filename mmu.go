@@ -67,6 +67,7 @@ type MMU struct {
 	cartridge  *Cartridge
 	ppu        *PPU
 	timer      *Timer
+	joypad     *Joypad
 	interrupts *Interrupts
 
 	wram Memory
@@ -77,11 +78,12 @@ type MMU struct {
 	bootROMEnabled bool
 }
 
-func NewMMU(cart *Cartridge, ppu *PPU, timer *Timer, interrupts *Interrupts) *MMU {
+func NewMMU(cart *Cartridge, ppu *PPU, timer *Timer, joypad *Joypad, interrupts *Interrupts) *MMU {
 	return &MMU{
 		cartridge:      cart,
 		ppu:            ppu,
 		timer:          timer,
+		joypad:         joypad,
 		interrupts:     interrupts,
 		wram:           NewRAM(0x2000),
 		hram:           NewRAM(0x7F),
@@ -108,7 +110,7 @@ func (m *MMU) Read(address uint16) byte {
 	case address < IoRegistersAddress:
 		return 0xFF // Not usable
 	case address == IoRegistersAddress:
-		return 0xFF // TODO: Joypad not implemented
+		return m.joypad.Read()
 	case address >= DivAddress && address <= TacAddress:
 		return m.timer.Read(address)
 	case address == InterruptFlagAddress:
@@ -141,7 +143,7 @@ func (m *MMU) Write(address uint16, val byte) {
 	case address < IoRegistersAddress:
 		return // Not usable
 	case address == IoRegistersAddress:
-		return // TODO: Joypad not implemented yet
+		m.joypad.Write(val)
 	case address == 0xFF02 && val == 0x81: // FIXME: Used for Blargg's CPU tests
 		out := m.Read(0xFF01)
 		fmt.Printf("%c", out)

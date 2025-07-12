@@ -14,12 +14,14 @@ const (
 
 type Display struct {
 	ppu    *PPU
+	joypad *Joypad
 	screen *ebiten.Image
 }
 
-func NewDisplay(ppu *PPU) *Display {
+func NewDisplay(ppu *PPU, joypad *Joypad) *Display {
 	return &Display{
 		ppu:    ppu,
+		joypad: joypad,
 		screen: ebiten.NewImage(ScreenWidth, ScreenHeight),
 	}
 }
@@ -42,7 +44,8 @@ func (d *Display) Draw(screen *ebiten.Image) {
 }
 
 func (d *Display) Update() error {
-	return nil // Step is handled by the Scheduler
+	d.joypad.Update()
+	return nil
 }
 
 func (d *Display) Layout(outsideWidth int, outsideHeight int) (int, int) {

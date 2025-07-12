@@ -16,9 +16,10 @@ func main() {
 
 	interrupts := NewInterrupts()
 	ppu := NewPPU(interrupts)
-	display := NewDisplay(ppu)
+	joypad := NewJoypad()
+	display := NewDisplay(ppu, joypad)
 	timer := NewTimer(interrupts)
-	mmu := NewMMU(cartridge, ppu, timer, interrupts)
+	mmu := NewMMU(cartridge, ppu, timer, joypad, interrupts)
 	cpu := NewCPU(mmu, interrupts)
 
 	scheduler := NewScheduler(cpu, ppu, timer)
