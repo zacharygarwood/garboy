@@ -1,10 +1,12 @@
-# garboy
+# Garboy
 
-A hobby Gameboy emulator made by Zach (Gar)wood
+A Gameboy emulator made by Zach (Gar)wood
+
+![nintendo-logo](./assets/png/nintendo.png)
 
 ## Features
 
-- **Accurate Emulation**: Replicates the Gameboy hardware behavior for the experience you know and love
+- **Accurate Emulation**: Replicates the Gameboy hardware behavior *enough* for the experience you know and love. Not 100% cycle accurate
 - **Supported MBCs**: Compatible with games using:
     - MBC0 (ROM Only)
     - MBC1
@@ -12,10 +14,6 @@ A hobby Gameboy emulator made by Zach (Gar)wood
 - **Keyboard Support**: Play with your keyboard
     - Left/Right/Up/Down = Arrow keys
     - A/B/Select/Start = X/Z/Enter/Shift
-
-## Gameplay
-
-TODO: Add gifs
 
 ## Getting Started
 
@@ -33,9 +31,26 @@ You should see a window appear with your ROM running after this.
 1. Setup the repository following "Getting Started"
 2. `go test ./test`
 
-This will go through all of the CPU single step tests and various test ROMS.
+This will go through all of the CPU single step tests and various test ROMs.
+
+## Screenshots
+![pokemon](./assets/png/pokemon.png)
+![zelda](./assets/png/zelda.png)
+![kirby](./assets/png/kirby.png)
+![tennis](./assets/png/tennis.png)
+![mario](./assets/png/mario.png)
+![dr-mario](./assets/png/dr-mario.png)
+
+## Gameplay
+
+![pokemon](./assets/gif/pokemon.gif)
+![zelda](./assets/gif/zelda.gif)
+![kirby](./assets/gif/kirby.gif)
+![tennis](./assets/gif/tennis.gif)
 
 ## Compatibility
+
+![dmg-acid2](./assets/png/dmg-acid2.png)
 
 dmg-acid2 passes, Blargg's cpu_instrs passes and some mooneye tests pass. Here are a full list of the test ROMs I used. Thankfully it didn't need to be super accurate :)
 ```
@@ -81,18 +96,18 @@ dmg-acid2 passes, Blargg's cpu_instrs passes and some mooneye tests pass. Here a
     --- FAIL: TestRoms/tima_write_reloading.gb (0.01s)
     --- FAIL: TestRoms/tma_write_reloading.gb (0.01s)
 ```
-### Limitations
+## Limitations
 - **No Audio**: Top of my list to implement one day
-- **No Settings**: Every game will be a nice shade of blue unless you modify the code and no speeding it up, gotta play the old fashioned way
-- **No GBC Support**: 4 shades of a color was good enough for me
+- **No Settings**: Every game will be a nice shade of blue unless you modify the code. There's no speeding it up - gotta play the old fashioned way!
+- **No GBC Support**: Who needs more than 4 shades of blue?
 
-### Kudos
+## Special Thanks
 - Blargg for the [cpu_instrs](https://github.com/retrio/gb-test-roms) test ROMs
 - [SingleStepTests](https://github.com/SingleStepTests/sm83) for helping me confirm my CPU was sound
 - Mooneye for various (timer, PPU, MBC) [test ROMs](https://github.com/Gekkio/mooneye-test-suite)
 - Matt Currie for the dmg-acid2 test ROM [:)](https://github.com/mattcurrie/dmg-acid2?tab=readme-ov-file)
 
-### Disclaimer
+## Disclaimer
 This was made for educational purposes only.
 
 <sub><sup>pls don't sue me Nintendo</sup></sub>
