@@ -1,5 +1,9 @@
 package main
 
+import (
+	"time"
+)
+
 const (
 	MBC3RamEnableEnd = 0x1FFF
 	MBC3RomBankStart = 0x2000
@@ -11,102 +15,152 @@ const (
 )
 
 type MBC3 struct {
-	rom            Memory
-	ram            Memory
-	romBankCount   int
-	ramBankCount   int
-	currentRomBank int
-	currentRamBank int
-	ramEnabled     bool
-	rtcEnabled     bool
-	rtcRegister    int
-	rtcData        [5]uint8
-	rtcLatched     [5]uint8
+	rom          []byte
+	ram          []byte
+	romBank      byte
+	ramBank      byte
+	ramEnabled   bool
+	hasRam       bool
+	hasTimer     bool
+	rtcSelect    byte
+	rtcRegs      [5]byte // Seconds, Minutes, Hours, Days Low, Days High
+	rtcLatch     [5]byte
+	rtcLatchData byte
+	rtcBaseTime  time.Time
+	rtcHalt      bool
 }
 
-func NewMBC3(rom []uint8, header CartridgeHeader) *MBC3 {
-	romSize := getRomSize(header.RomSize)
-	ramSize := getRamSize(header.RamSize)
-
-	return &MBC3{
-		rom:            NewROM(rom),
-		ram:            NewRAM(ramSize),
-		romBankCount:   romSize / RomBankSize,
-		ramBankCount:   ramSize / RamBankSize,
-		currentRomBank: 1,
-		currentRamBank: 0,
-		ramEnabled:     false,
-		rtcEnabled:     false,
-		rtcRegister:    0,
-		rtcData:        [5]uint8{0, 0, 0, 0, 0}, // Seconds, Minutes, Hours, Days low, Days high
-		rtcLatched:     [5]uint8{0, 0, 0, 0, 0}, // ^ but latched
+func NewMBC3(data []byte, header CartridgeHeader) *MBC3 {
+	mbc := &MBC3{
+		rom:         data,
+		romBank:     1,
+		ramBank:     0,
+		ramEnabled:  false,
+		hasRam:      header.CartType == 0x10 || header.CartType == 0x12 || header.CartType == 0x13,
+		hasTimer:    header.CartType == 0x0F || header.CartType == 0x10,
+		rtcBaseTime: time.Now(),
 	}
+
+	if mbc.hasRam {
+		ramSize := getRamSize(header.RamSize)
+		mbc.ram = make([]byte, ramSize)
+	}
+
+	return mbc
 }
 
-func (m *MBC3) Read(address uint16) uint8 {
+func (m *MBC3) Read(address uint16) byte {
 	switch {
-	case address <= RomBank0End:
-		return m.rom.Read(address)
-	case address >= RomBankXStart && address <= RomBankXEnd:
-		bankOffset := uint16(m.currentRomBank) * RomBankSize
-		return m.rom.Read(bankOffset + (address - RomBankXStart))
-	case address >= RamStart && address <= RamEnd:
+	case address < RomBank1Address:
+		return m.rom[address]
+	case address < VramAddress:
+		bankOffset := int(m.romBank) * RomBankSize
+		romAddress := bankOffset + int(address-RomBank1Address)
+		if romAddress < len(m.rom) {
+			return m.rom[romAddress]
+		}
+		return 0xFF
+	case address >= ExternalRamAddress && address < WramAddress:
 		if !m.ramEnabled {
 			return 0xFF
 		}
 
-		if m.currentRamBank >= 0x08 && m.currentRamBank <= 0x0C {
-			rtcIndex := m.currentRamBank - 0x08
-			return m.rtcLatched[rtcIndex]
+		if m.ramBank <= 0x03 {
+			if !m.hasRam {
+				return 0xFF
+			}
+			ramAddress := int(m.ramBank)*RamBankSize + int(address-ExternalRamAddress)
+			if ramAddress < len(m.ram) {
+				return m.ram[ramAddress]
+			}
+			return 0xFF
+		} else if m.ramBank >= 0x08 && m.ramBank <= 0x0C && m.hasTimer {
+			return m.rtcLatch[m.ramBank-0x08]
 		}
-
-		if m.ramBankCount > 0 && m.currentRamBank < m.ramBankCount {
-			bankOffset := uint16(m.currentRamBank) * RamBankSize
-			return m.ram.Read(bankOffset + (address - RamStart))
-		}
-
 		return 0xFF
 	default:
-		panic("Reading from MBC3 at invalid address")
+		return 0xFF
 	}
 }
 
-func (m *MBC3) Write(address uint16, val uint8) {
+func (m *MBC3) Write(address uint16, val byte) {
 	switch {
-	case address <= MBC3RamEnableEnd:
+	case address < MBC3RomBankStart:
 		m.ramEnabled = (val & 0x0F) == 0x0A
-	case address >= MBC3RomBankStart && address <= MBC3RomBankEnd:
-		bank := int(val & 0x7F)
+	case address < MBC3RamBankStart:
+		bank := val & 0x7F
 		if bank == 0 {
 			bank = 1
 		}
-		if bank < m.romBankCount {
-			m.currentRomBank = bank
+		m.romBank = bank
+	case address < MBC3LatchStart:
+		m.ramBank = val
+	case address < VramAddress:
+		if m.hasTimer {
+			if m.rtcLatchData == 0x00 && val == 0x01 {
+				m.latchRTC()
+			}
+			m.rtcLatchData = val
 		}
-	case address >= MBC3RamBankStart && address <= MBC3RamBankEnd:
-		if val <= 0x03 {
-			m.currentRamBank = int(val)
-		} else if val >= 0x08 && val <= 0x0C {
-			m.currentRamBank = int(val)
-		}
-	case address >= MBC3LatchStart && address <= MBC3LatchEnd:
-		if val == 0x01 {
-			m.rtcLatched = m.rtcData
-		}
-	case address >= RamStart && address <= RamEnd:
+	case address >= ExternalRamAddress && address < WramAddress:
 		if !m.ramEnabled {
 			return
 		}
 
-		if m.currentRamBank >= 0x08 && m.currentRamBank <= 0x0C {
-			rtcIndex := m.currentRamBank - 0x08
-			m.rtcData[rtcIndex] = val
-			return
+		if m.ramBank <= 0x03 {
+			if !m.hasRam {
+				return
+			}
+			ramAddress := int(m.ramBank)*RamBankSize + int(address-ExternalRamAddress)
+			if ramAddress < len(m.ram) {
+				m.ram[ramAddress] = val
+			}
+		} else if m.ramBank >= 0x08 && m.ramBank <= 0x0C && m.hasTimer {
+			m.writeRTC(m.ramBank-0x08, val)
 		}
+	}
+}
 
-		if m.ramBankCount > 0 && m.currentRamBank < m.ramBankCount {
-			bankOffset := uint16(m.currentRamBank) * RamBankSize
-			m.ram.Write(bankOffset+(address-RamStart), val)
+func (m *MBC3) latchRTC() {
+	if m.rtcHalt {
+		copy(m.rtcLatch[:], m.rtcRegs[:])
+		return
+	}
+
+	elapsed := time.Since(m.rtcBaseTime)
+	totalSeconds := int(elapsed.Seconds())
+
+	seconds := totalSeconds % 60
+	minutes := (totalSeconds / 60) % 60
+	hours := (totalSeconds / 3600) % 24
+	days := totalSeconds / 86400
+
+	m.rtcLatch[0] = byte(seconds)
+	m.rtcLatch[1] = byte(minutes)
+	m.rtcLatch[2] = byte(hours)
+	m.rtcLatch[3] = byte(days & 0xFF)
+
+	dayHigh := byte((days >> 8) & 0x01)
+	carry := byte(0)
+	if days > 511 {
+		carry = 0x80
+	}
+	halt := byte(0)
+	if m.rtcHalt {
+		halt = 0x40
+	}
+
+	m.rtcLatch[4] = dayHigh | carry | halt
+}
+
+func (m *MBC3) writeRTC(reg byte, val byte) {
+	m.rtcRegs[reg] = val
+
+	switch reg {
+	case 4: // Days high
+		m.rtcHalt = (val & 0x40) != 0
+		if !m.rtcHalt {
+			m.rtcBaseTime = time.Now()
 		}
 	}
 }
