@@ -57,7 +57,6 @@ func (io *IORegisters) Read(offset uint16) byte {
 
 func (io *IORegisters) Write(offset uint16, val byte) {
 	io.data[offset] = val
-	// TODO: Trigger hardware effects (timer, joypad, etc)
 }
 
 // Not the greatest, but I had to add this so that the byte in memory returned by cpu.byteAt() would be treated as a Register8
