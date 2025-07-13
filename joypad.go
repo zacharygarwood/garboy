@@ -1,6 +1,8 @@
 package main
 
-import "github.com/hajimehoshi/ebiten/v2"
+import (
+	"github.com/hajimehoshi/ebiten/v2"
+)
 
 const (
 	JoypadRight  = 0
@@ -33,7 +35,6 @@ func NewJoypad() *Joypad {
 func (j *Joypad) Update() {
 	j.buttonState = 0xFF
 
-	// Directional keys
 	if ebiten.IsKeyPressed(ebiten.KeyRight) {
 		j.buttonState = ResetBit(j.buttonState, JoypadRight)
 	}

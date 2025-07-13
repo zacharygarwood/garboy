@@ -24,7 +24,8 @@ func main() {
 
 	scheduler := NewScheduler(cpu, ppu, timer)
 
-	cpu.SkipBootROM()
+	// Uncomment this if you aren't patient ;)
+	// cpu.SkipBootROM()
 
 	go RunDisplay(display)
 

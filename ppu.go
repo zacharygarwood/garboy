@@ -113,7 +113,6 @@ func NewPPU(interrupts *Interrupts) *PPU {
 
 func (p *PPU) Step(cycles uint16) {
 	if !p.isLcdEnabled() {
-		fmt.Printf("LCD disabled\n")
 		return
 	}
 
