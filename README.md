@@ -2,7 +2,7 @@
 
 A Gameboy emulator made by Zach (Gar)wood
 
-![nintendo-logo](./assets/png/nintendo.png)
+<img src="./assets/png/nintendo.png" width=300px height=auto>
 
 ## Features
 
@@ -42,7 +42,7 @@ This will go through all of the CPU single step tests and various test ROMs.
 
 ## Compatibility
 
-![dmg-acid2](./assets/png/dmg-acid2.png)
+<img src="./assets/png/dmg-acid2.png" width=300px height=auto>
 
 dmg-acid2 passes, Blargg's cpu_instrs passes and some mooneye tests pass. Here are a full list of the test ROMs I used. Thankfully it didn't need to be super accurate :)
 ```
