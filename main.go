@@ -12,7 +12,7 @@ var (
 )
 
 func main() {
-	cartridge := NewCartridge("./roms/pokemon-red.gb")
+	cartridge := NewCartridge("./roms/kirbys-dream-land.gb")
 
 	interrupts := NewInterrupts()
 	ppu := NewPPU(interrupts)
