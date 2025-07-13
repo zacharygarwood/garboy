@@ -1,9 +1,14 @@
-package main
+package display
 
 import (
 	"fmt"
 	"sort"
 	"sync"
+
+	"garboy/addresses"
+	"garboy/interrupts"
+	"garboy/memory"
+	"garboy/utils"
 )
 
 const (
@@ -69,8 +74,8 @@ type SpriteWithIndex struct {
 }
 
 type PPU struct {
-	vram Memory
-	oam  Memory
+	vram memory.Memory
+	oam  memory.Memory
 
 	lcdc uint8
 	stat uint8
@@ -93,13 +98,13 @@ type PPU struct {
 	backBuffer  *[ScreenHeight][ScreenWidth]Color
 	mu          sync.Mutex
 
-	interrupts *Interrupts
+	interrupts *interrupts.Interrupts
 }
 
-func NewPPU(interrupts *Interrupts) *PPU {
+func NewPPU(interrupts *interrupts.Interrupts) *PPU {
 	return &PPU{
-		vram:        NewRAM(0x2000),
-		oam:         NewRAM(0xA0),
+		vram:        memory.NewRAM(0x2000),
+		oam:         memory.NewRAM(0xA0),
 		lcdc:        0x91,
 		stat:        0x85,
 		bgp:         0xFC,
@@ -190,8 +195,8 @@ func (p *PPU) moveToNextScanline() {
 func (p *PPU) updateLyc() {
 	if p.ly == p.lyc {
 		p.stat |= LycFlagBit
-		if IsBitSet(p.stat, LycInterruptBit) {
-			p.interrupts.Request(LcdInterrupt)
+		if utils.IsBitSet(p.stat, LycInterruptBit) {
+			p.interrupts.Request(interrupts.LcdInterrupt)
 		}
 	} else {
 		p.stat &= ^uint8(1 << LycFlagBit)
@@ -199,22 +204,22 @@ func (p *PPU) updateLyc() {
 }
 
 func (p *PPU) checkVBlankInterrupt() {
-	p.interrupts.Request(VBlankInterrupt)
+	p.interrupts.Request(interrupts.VBlankInterrupt)
 
-	if IsBitSet(p.stat, VBlankInterruptBit) {
-		p.interrupts.Request(LcdInterrupt)
+	if utils.IsBitSet(p.stat, VBlankInterruptBit) {
+		p.interrupts.Request(interrupts.LcdInterrupt)
 	}
 }
 
 func (p *PPU) checkHBlankInterrupt() {
-	if IsBitSet(p.stat, HBlankInterruptBit) {
-		p.interrupts.Request(LcdInterrupt)
+	if utils.IsBitSet(p.stat, HBlankInterruptBit) {
+		p.interrupts.Request(interrupts.LcdInterrupt)
 	}
 }
 
 func (p *PPU) checkOamInterrupt() {
-	if IsBitSet(p.stat, OamInterruptBit) {
-		p.interrupts.Request(LcdInterrupt)
+	if utils.IsBitSet(p.stat, OamInterruptBit) {
+		p.interrupts.Request(interrupts.LcdInterrupt)
 	}
 }
 
@@ -225,15 +230,15 @@ func (p *PPU) renderScanline() {
 
 	p.clearScanline()
 
-	if IsBitSet(p.lcdc, BgWindowEnable) {
+	if utils.IsBitSet(p.lcdc, BgWindowEnable) {
 		p.renderBackground()
 	}
 
-	if IsBitSet(p.lcdc, WindowEnable) && p.shouldRenderWindow() {
+	if utils.IsBitSet(p.lcdc, WindowEnable) && p.shouldRenderWindow() {
 		p.renderWindow()
 	}
 
-	if IsBitSet(p.lcdc, SpriteEnable) {
+	if utils.IsBitSet(p.lcdc, SpriteEnable) {
 		p.renderSprites()
 	}
 }
@@ -269,14 +274,14 @@ func (p *PPU) renderBackground() {
 }
 
 func (p *PPU) getBackgroundTileMapBase() uint16 {
-	if IsBitSet(p.lcdc, BgTileMap) {
+	if utils.IsBitSet(p.lcdc, BgTileMap) {
 		return 0x9C00
 	}
 	return 0x9800
 }
 
 func (p *PPU) getWindowTileMapBase() uint16 {
-	if IsBitSet(p.lcdc, WindowTileMap) {
+	if utils.IsBitSet(p.lcdc, WindowTileMap) {
 		return 0x9C00
 	}
 	return 0x9800
@@ -342,14 +347,14 @@ func (p *PPU) renderSprites() {
 }
 
 func (p *PPU) getSpriteHeight() int {
-	if IsBitSet(p.lcdc, SpriteSize) {
+	if utils.IsBitSet(p.lcdc, SpriteSize) {
 		return 16
 	}
 	return 8
 }
 
 func (p *PPU) getSprite(index int) Sprite {
-	base := uint16(OamAddress) + uint16(index*4)
+	base := uint16(addresses.Oam) + uint16(index*4)
 	return Sprite{
 		y:         p.readOam(base),
 		x:         p.readOam(base + 1),
@@ -371,7 +376,7 @@ func (p *PPU) renderSprite(sprite Sprite, spriteHeight int) {
 	spriteY := int(sprite.y) - 16
 	spriteLine := int(p.ly) - spriteY
 
-	if IsBitSet(sprite.flags, SpriteYFlip) {
+	if utils.IsBitSet(sprite.flags, SpriteYFlip) {
 		spriteLine = spriteHeight - 1 - spriteLine
 	}
 
@@ -393,7 +398,7 @@ func (p *PPU) renderSprite(sprite Sprite, spriteHeight int) {
 		}
 
 		spritePixelX := pixelX
-		if IsBitSet(sprite.flags, SpriteXFlip) {
+		if utils.IsBitSet(sprite.flags, SpriteXFlip) {
 			spritePixelX = 7 - pixelX
 		}
 
@@ -403,7 +408,7 @@ func (p *PPU) renderSprite(sprite Sprite, spriteHeight int) {
 			continue
 		}
 
-		if IsBitSet(sprite.flags, SpritePriority) && p.backBuffer[p.ly][screenX] != 0 {
+		if utils.IsBitSet(sprite.flags, SpritePriority) && p.backBuffer[p.ly][screenX] != 0 {
 			continue
 		}
 
@@ -418,7 +423,7 @@ func (c Color) isTransparent() bool {
 
 func (p *PPU) applySpritePalette(sprite Sprite, color Color) Color {
 	palette := p.obp0
-	if IsBitSet(sprite.flags, SpritePalette) {
+	if utils.IsBitSet(sprite.flags, SpritePalette) {
 		palette = p.obp1
 	}
 
@@ -449,7 +454,7 @@ func (p *PPU) getPixelFromTileData(tileDataAdddress uint16, pixelX int, pixelY i
 }
 
 func (p *PPU) getTileDataAddress(tileIndex uint8) uint16 {
-	if IsBitSet(p.lcdc, BgWindowTileData) {
+	if utils.IsBitSet(p.lcdc, BgWindowTileData) {
 		return uint16(0x8000) + uint16(tileIndex)*16
 	} else {
 		signedIndex := int8(tileIndex)
@@ -458,61 +463,61 @@ func (p *PPU) getTileDataAddress(tileIndex uint8) uint16 {
 }
 
 func (p *PPU) isLcdEnabled() bool {
-	return IsBitSet(p.lcdc, LcdEnable)
+	return utils.IsBitSet(p.lcdc, LcdEnable)
 }
 
 func (p *PPU) readVram(address uint16) uint8 {
-	if address >= VramAddress && address <= VramEndAddress {
-		return p.vram.Read(address - VramAddress)
+	if address >= addresses.Vram && address <= addresses.VramEnd {
+		return p.vram.Read(address - addresses.Vram)
 	}
 	return 0xFF
 }
 
 func (p *PPU) writeVram(address uint16, val uint8) {
-	if address >= VramAddress && address <= VramEndAddress {
-		p.vram.Write(address-VramAddress, val)
+	if address >= addresses.Vram && address <= addresses.VramEnd {
+		p.vram.Write(address-addresses.Vram, val)
 	}
 }
 
 func (p *PPU) readOam(address uint16) uint8 {
-	return p.oam.Read(address - OamAddress)
+	return p.oam.Read(address - addresses.Oam)
 }
 
 func (p *PPU) writeOam(address uint16, val uint8) {
-	p.oam.Write(address-OamAddress, val)
+	p.oam.Write(address-addresses.Oam, val)
 }
 
 func (p *PPU) Read(address uint16) uint8 {
 	switch address {
-	case LcdControlAddress:
+	case addresses.LcdControl:
 		return p.lcdc
-	case LcdStatusAddress:
+	case addresses.LcdStatus:
 		return p.stat | 0x80 // 7th bit always 1
-	case ScrollYAddress:
+	case addresses.ScrollY:
 		return p.scy
-	case ScrollXAddress:
+	case addresses.ScrollX:
 		return p.scx
-	case LyAddress:
+	case addresses.Ly:
 		return p.ly
-	case LycAddress:
+	case addresses.Lyc:
 		return p.lyc
-	case DmaAddress:
+	case addresses.Dma:
 		return p.dma
-	case WindowYAddress:
+	case addresses.WindowY:
 		return p.wy
-	case WindowXAddress:
+	case addresses.WindowX:
 		return p.wx
-	case BgPaletteAddress:
+	case addresses.BgPalette:
 		return p.bgp
-	case ObP0PaletteAddress:
+	case addresses.ObP0Palette:
 		return p.obp0
-	case ObP1PaletteAddress:
+	case addresses.ObP1Palette:
 		return p.obp1
 	default:
-		if address >= VramAddress && address <= VramEndAddress {
+		if address >= addresses.Vram && address <= addresses.VramEnd {
 			return p.readVram(address)
 		}
-		if address >= OamAddress && address <= OamEndAddress {
+		if address >= addresses.Oam && address <= addresses.OamEnd {
 			return p.readOam(address)
 		}
 		return 0xFF
@@ -521,7 +526,7 @@ func (p *PPU) Read(address uint16) uint8 {
 
 func (p *PPU) Write(address uint16, val uint8) {
 	switch address {
-	case LcdControlAddress:
+	case addresses.LcdControl:
 		prevEnabled := p.isLcdEnabled()
 		p.lcdc = val
 
@@ -530,32 +535,32 @@ func (p *PPU) Write(address uint16, val uint8) {
 			p.windowLineCounter = 0
 			p.enterMode(HBlankMode)
 		}
-	case LcdStatusAddress:
+	case addresses.LcdStatus:
 		p.stat = (p.stat & 0x87) | (val & 0x78) // Only bits 6-3 are writable
-	case ScrollYAddress:
+	case addresses.ScrollY:
 		p.scy = val
-	case ScrollXAddress:
+	case addresses.ScrollX:
 		p.scx = val
-	case LycAddress:
+	case addresses.Lyc:
 		p.lyc = val
 		p.updateLyc()
 		// DMA Transfer handled in MMU
-	case WindowYAddress:
+	case addresses.WindowY:
 		p.wy = val
-	case WindowXAddress:
+	case addresses.WindowX:
 		p.wx = val
-	case BgPaletteAddress:
+	case addresses.BgPalette:
 		p.bgp = val
-	case ObP0PaletteAddress:
+	case addresses.ObP0Palette:
 		p.obp0 = val
-	case ObP1PaletteAddress:
+	case addresses.ObP1Palette:
 		p.obp1 = val
 	default:
-		if address >= VramAddress && address <= VramEndAddress {
+		if address >= addresses.Vram && address <= addresses.VramEnd {
 			p.writeVram(address, val)
 			return
 		}
-		if address >= OamAddress && address <= OamEndAddress {
+		if address >= addresses.Oam && address <= addresses.OamEnd {
 			p.writeOam(address, val)
 			return
 		}
@@ -582,8 +587,8 @@ func (p *PPU) Reset() {
 	p.cycles = 0
 	p.windowLineCounter = 0
 
-	p.vram = NewRAM(0x2000)
-	p.oam = NewRAM(0xA0)
+	p.vram = memory.NewRAM(0x2000)
+	p.oam = memory.NewRAM(0xA0)
 
 	for y := range p.backBuffer {
 		for x := range p.backBuffer[y] {

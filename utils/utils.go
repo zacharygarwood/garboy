@@ -1,4 +1,4 @@
-package main
+package utils
 
 func ExtractBits(b byte, positions []int) byte {
 	var result byte

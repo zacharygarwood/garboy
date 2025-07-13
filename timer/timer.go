@@ -1,7 +1,11 @@
-package main
+package timer
 
 import (
 	"fmt"
+
+	"garboy/addresses"
+	"garboy/interrupts"
+	"garboy/utils"
 )
 
 const (
@@ -19,10 +23,10 @@ type Timer struct {
 	systemCounter uint16
 	timerCounter  uint16
 
-	interrupts *Interrupts
+	interrupts *interrupts.Interrupts
 }
 
-func NewTimer(interrupts *Interrupts) *Timer {
+func NewTimer(interrupts *interrupts.Interrupts) *Timer {
 	return &Timer{
 		interrupts: interrupts,
 	}
@@ -39,7 +43,7 @@ func (t *Timer) Step(cycles uint16) {
 			t.timerCounter -= frequency
 			if t.tima == 0xFF {
 				t.tima = t.tma
-				t.interrupts.Request(TimerInterrupt)
+				t.interrupts.Request(interrupts.TimerInterrupt)
 			} else {
 				t.tima++
 			}
@@ -48,7 +52,7 @@ func (t *Timer) Step(cycles uint16) {
 }
 
 func (t *Timer) isTimerEnabled() bool {
-	return IsBitSet(t.tac, TacEnable)
+	return utils.IsBitSet(t.tac, TacEnable)
 }
 
 func (t *Timer) timerFrequency() uint16 {
@@ -58,13 +62,13 @@ func (t *Timer) timerFrequency() uint16 {
 
 func (t *Timer) Read(address uint16) uint8 {
 	switch address {
-	case DivAddress:
+	case addresses.Div:
 		return uint8(t.systemCounter >> 8)
-	case TimaAddress:
+	case addresses.Tima:
 		return t.tima
-	case TmaAddress:
+	case addresses.Tma:
 		return t.tma
-	case TacAddress:
+	case addresses.Tac:
 		return t.tac
 	default:
 		panic("Invalid address trying to read from Timer")
@@ -73,15 +77,15 @@ func (t *Timer) Read(address uint16) uint8 {
 
 func (t *Timer) Write(address uint16, val uint8) {
 	switch address {
-	case DivAddress:
+	case addresses.Div:
 		// Writing to DIV resets it
 		t.systemCounter = 0
 		t.timerCounter = 0
-	case TimaAddress:
+	case addresses.Tima:
 		t.tima = val
-	case TmaAddress:
+	case addresses.Tma:
 		t.tma = val
-	case TacAddress:
+	case addresses.Tac:
 		t.tac = val & 0x07
 	}
 }

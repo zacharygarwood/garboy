@@ -7,6 +7,14 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"garboy/cartridge"
+	"garboy/cpu"
+	"garboy/display"
+	"garboy/interrupts"
+	"garboy/mmu"
+	"garboy/scheduler"
+	"garboy/timer"
 )
 
 func runRomTest(t *testing.T, romPath string) {
@@ -22,27 +30,28 @@ func runRomTest(t *testing.T, romPath string) {
 		os.Stdout = w
 	}
 
-	cartridge := NewCartridge(romPath)
-	interrupts := NewInterrupts()
-	ppu := NewPPU(interrupts)
-	timer := NewTimer(interrupts)
-	mmu := NewMMU(cartridge, ppu, timer, interrupts)
-	cpu := NewCPU(mmu, interrupts)
-	scheduler := NewScheduler(cpu, ppu, timer)
+	cartridge := cartridge.NewCartridge(romPath)
+	interrupts := interrupts.NewInterrupts()
+	ppu := display.NewPPU(interrupts)
+	timer := timer.NewTimer(interrupts)
+	joypad := display.NewJoypad()
+	mmu := mmu.NewMMU(cartridge, ppu, timer, joypad, interrupts)
+	cpu := cpu.NewCPU(mmu, interrupts)
+	scheduler := scheduler.NewScheduler(cpu, ppu, timer)
 	cpu.SkipBootROM()
 
 	const maxCycles = 80_000_000
 	for cycles := 0; cycles < maxCycles; cycles++ {
 		scheduler.Step()
 
+		_, _, b, c, d, e, h, l, _, pc := cpu.GetState()
+
 		if isMooneyeTest {
-			pc := cpu.reg.pc.Read()
-			if mmu.Read(pc) == 0x18 && mmu.Read(pc+1) == 0xFE {
-				b, c, d, e, h, l := cpu.reg.b.Read(), cpu.reg.c.Read(), cpu.reg.d.Read(), cpu.reg.e.Read(), cpu.reg.h.Read(), cpu.reg.l.Read()
-				if b == 3 && c == 5 && d == 8 && e == 13 && h == 21 && l == 34 {
+			if mmu.Read(pc.Read()) == 0x18 && mmu.Read(pc.Read()+1) == 0xFE {
+				if b.Read() == 3 && c.Read() == 5 && d.Read() == 8 && e.Read() == 13 && h.Read() == 21 && l.Read() == 34 {
 					return
 				}
-				t.Errorf("Mooneye test failed. Register state: B:%d, C:%d, D:%d, E:%d, H:%d, L:%d", b, c, d, e, h, l)
+				t.Errorf("Mooneye test failed. Register state: B:%d, C:%d, D:%d, E:%d, H:%d, L:%d", b.Read(), c.Read(), d.Read(), e.Read(), h.Read(), l.Read())
 				return
 			}
 		}

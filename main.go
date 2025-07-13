@@ -2,6 +2,14 @@ package main
 
 import (
 	"time"
+
+	"garboy/cartridge"
+	"garboy/cpu"
+	"garboy/display"
+	"garboy/interrupts"
+	"garboy/mmu"
+	"garboy/scheduler"
+	"garboy/timer"
 )
 
 var (
@@ -12,22 +20,22 @@ var (
 )
 
 func main() {
-	cartridge := NewCartridge("./roms/kirbys-dream-land.gb")
+	cartridge := cartridge.NewCartridge("./roms/pokemon-red.gb")
 
-	interrupts := NewInterrupts()
-	ppu := NewPPU(interrupts)
-	joypad := NewJoypad()
-	display := NewDisplay(ppu, joypad)
-	timer := NewTimer(interrupts)
-	mmu := NewMMU(cartridge, ppu, timer, joypad, interrupts)
-	cpu := NewCPU(mmu, interrupts)
+	interrupts := interrupts.NewInterrupts()
+	ppu := display.NewPPU(interrupts)
+	joypad := display.NewJoypad()
+	lcd := display.NewDisplay(ppu, joypad)
+	timer := timer.NewTimer(interrupts)
+	mmu := mmu.NewMMU(cartridge, ppu, timer, joypad, interrupts)
+	cpu := cpu.NewCPU(mmu, interrupts)
 
-	scheduler := NewScheduler(cpu, ppu, timer)
+	scheduler := scheduler.NewScheduler(cpu, ppu, timer)
 
 	// Uncomment this if you aren't patient ;)
 	// cpu.SkipBootROM()
 
-	go RunDisplay(display)
+	go display.RunDisplay(lcd)
 
 	for {
 		frameStartTime := time.Now()

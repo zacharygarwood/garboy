@@ -6,6 +6,10 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"garboy/cpu"
+	"garboy/interrupts"
+	"garboy/memory"
 )
 
 type TestState struct {
@@ -65,26 +69,28 @@ type TestCase struct {
 	Cycles       []TestCycle `json:"cycles"`
 }
 
-func setupCPUForTest(t *testing.T, state TestState) (*CPU, Memory) {
+func setupCPUForTest(t *testing.T, state TestState) (*cpu.CPU, memory.Memory) {
 	mmu := &MockMmu{
-		ram: NewRAM(0x10000),
+		ram: memory.NewRAM(0x10000),
 	}
 
-	interrupts := NewInterrupts()
-	cpu := NewCPU(mmu, interrupts)
+	interrupts := interrupts.NewInterrupts()
+	cpu := cpu.NewCPU(mmu, interrupts)
 
 	cpu.SkipBootROM()
 
-	cpu.reg.pc.Write(state.PC)
-	cpu.reg.sp.Write(state.SP)
-	cpu.reg.a.Write(state.A)
-	cpu.reg.b.Write(state.B)
-	cpu.reg.c.Write(state.C)
-	cpu.reg.d.Write(state.D)
-	cpu.reg.e.Write(state.E)
-	cpu.reg.f.Write(state.F)
-	cpu.reg.h.Write(state.H)
-	cpu.reg.l.Write(state.L)
+	a, f, b, c, d, e, h, l, sp, pc := cpu.GetState()
+
+	pc.Write(state.PC)
+	sp.Write(state.SP)
+	a.Write(state.A)
+	b.Write(state.B)
+	c.Write(state.C)
+	d.Write(state.D)
+	e.Write(state.E)
+	f.Write(state.F)
+	h.Write(state.H)
+	l.Write(state.L)
 
 	for _, ramState := range state.RAM {
 		mmu.Write(ramState[0], uint8(ramState[1]))
@@ -93,36 +99,37 @@ func setupCPUForTest(t *testing.T, state TestState) (*CPU, Memory) {
 	return cpu, mmu
 }
 
-func assertState(t *testing.T, testName string, cpu *CPU, mmu Memory, expected TestState) {
-	if cpu.reg.pc.Read() != expected.PC {
-		t.Errorf("%s: PC mismatch. Got %04X, want %04X\n", testName, cpu.reg.pc.Read(), expected.PC)
+func assertState(t *testing.T, testName string, cpu *cpu.CPU, mmu memory.Memory, expected TestState) {
+	a, f, b, c, d, e, h, l, sp, pc := cpu.GetState()
+	if pc.Read() != expected.PC {
+		t.Errorf("%s: PC mismatch. Got %04X, want %04X\n", testName, pc, expected.PC)
 	}
-	if cpu.reg.sp.Read() != expected.SP {
-		t.Errorf("%s: SP mismatch. Got %04X, want %04X\n", testName, cpu.reg.sp.Read(), expected.SP)
+	if sp.Read() != expected.SP {
+		t.Errorf("%s: SP mismatch. Got %04X, want %04X\n", testName, sp, expected.SP)
 	}
-	if cpu.reg.a.Read() != expected.A {
-		t.Errorf("%s: A mismatch. Got %02X, want %02X\n", testName, cpu.reg.a.Read(), expected.A)
+	if a.Read() != expected.A {
+		t.Errorf("%s: A mismatch. Got %02X, want %02X\n", testName, a.Read(), expected.A)
 	}
-	if cpu.reg.b.Read() != expected.B {
-		t.Errorf("%s: B mismatch. Got %02X, want %02X\n", testName, cpu.reg.b.Read(), expected.B)
+	if b.Read() != expected.B {
+		t.Errorf("%s: B mismatch. Got %02X, want %02X\n", testName, b.Read(), expected.B)
 	}
-	if cpu.reg.c.Read() != expected.C {
-		t.Errorf("%s: C mismatch. Got %02X, want %02X\n", testName, cpu.reg.c.Read(), expected.C)
+	if c.Read() != expected.C {
+		t.Errorf("%s: C mismatch. Got %02X, want %02X\n", testName, c.Read(), expected.C)
 	}
-	if cpu.reg.d.Read() != expected.D {
-		t.Errorf("%s: D mismatch. Got %02X, want %02X\n", testName, cpu.reg.d.Read(), expected.D)
+	if d.Read() != expected.D {
+		t.Errorf("%s: D mismatch. Got %02X, want %02X\n", testName, d.Read(), expected.D)
 	}
-	if cpu.reg.e.Read() != expected.E {
-		t.Errorf("%s: E mismatch. Got %02X, want %02X\n", testName, cpu.reg.e.Read(), expected.E)
+	if e.Read() != expected.E {
+		t.Errorf("%s: E mismatch. Got %02X, want %02X\n", testName, e.Read(), expected.E)
 	}
-	if (cpu.reg.f.Read() & 0xF0) != (expected.F & 0xF0) {
-		t.Errorf("%s: F mismatch. Got %02X, want %02X\n", testName, cpu.reg.f.Read(), expected.F)
+	if (f.Read() & 0xF0) != (expected.F & 0xF0) {
+		t.Errorf("%s: F mismatch. Got %02X, want %02X\n", testName, f.Read(), expected.F)
 	}
-	if cpu.reg.h.Read() != expected.H {
-		t.Errorf("%s: H mismatch. Got %02X, want %02X\n", testName, cpu.reg.h.Read(), expected.H)
+	if h.Read() != expected.H {
+		t.Errorf("%s: H mismatch. Got %02X, want %02X\n", testName, h.Read(), expected.H)
 	}
-	if cpu.reg.l.Read() != expected.L {
-		t.Errorf("%s: L mismatch. Got %02X, want %02X\n", testName, cpu.reg.l.Read(), expected.L)
+	if l.Read() != expected.L {
+		t.Errorf("%s: L mismatch. Got %02X, want %02X\n", testName, l.Read(), expected.L)
 	}
 
 	for _, ramState := range expected.RAM {

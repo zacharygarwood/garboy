@@ -1,12 +1,18 @@
-package main
+package scheduler
+
+import (
+	"garboy/cpu"
+	"garboy/display"
+	"garboy/timer"
+)
 
 type Scheduler struct {
-	cpu   *CPU
-	ppu   *PPU
-	timer *Timer
+	cpu   *cpu.CPU
+	ppu   *display.PPU
+	timer *timer.Timer
 }
 
-func NewScheduler(cpu *CPU, ppu *PPU, timer *Timer) *Scheduler {
+func NewScheduler(cpu *cpu.CPU, ppu *display.PPU, timer *timer.Timer) *Scheduler {
 	return &Scheduler{
 		cpu:   cpu,
 		ppu:   ppu,

@@ -1,4 +1,9 @@
-package main
+package cpu
+
+import (
+	"garboy/memory"
+	"garboy/utils"
+)
 
 type Instruction struct {
 	Opcode   byte
@@ -553,15 +558,15 @@ func (c *CPU) getImm16() uint16 {
 }
 
 // MemoryReference8 conforms to the Register8 interface
-func (c *CPU) byteAt(addr uint16) *MemoryReference8 {
-	return &MemoryReference8{
-		cpu:  c,
-		addr: addr,
+func (c *CPU) byteAt(addr uint16) *memory.MemoryReference8 {
+	return &memory.MemoryReference8{
+		Mmu:  c.mmu,
+		Addr: addr,
 	}
 }
 
-func (c *CPU) getRegister8(opcode byte, bits []int) Register8 {
-	index := ExtractBits(opcode, bits)
+func (c *CPU) getRegister8(opcode byte, bits []int) memory.Register8 {
+	index := utils.ExtractBits(opcode, bits)
 	switch index {
 	case 0:
 		return c.reg.b
@@ -584,8 +589,8 @@ func (c *CPU) getRegister8(opcode byte, bits []int) Register8 {
 	}
 }
 
-func (c *CPU) getRegister16(opcode byte, bits []int) Register16 {
-	index := ExtractBits(opcode, bits)
+func (c *CPU) getRegister16(opcode byte, bits []int) memory.Register16 {
+	index := utils.ExtractBits(opcode, bits)
 	switch index {
 	case 0:
 		return c.reg.bc
@@ -600,8 +605,8 @@ func (c *CPU) getRegister16(opcode byte, bits []int) Register16 {
 	}
 }
 
-func (c *CPU) getRegister16Stk(opcode byte, bits []int) Register16 {
-	index := ExtractBits(opcode, bits)
+func (c *CPU) getRegister16Stk(opcode byte, bits []int) memory.Register16 {
+	index := utils.ExtractBits(opcode, bits)
 	switch index {
 	case 0:
 		return c.reg.bc
@@ -616,8 +621,8 @@ func (c *CPU) getRegister16Stk(opcode byte, bits []int) Register16 {
 	}
 }
 
-func (c *CPU) getRegister16Mem(opcode byte, bits []int) *MemoryReference8 {
-	index := ExtractBits(opcode, bits)
+func (c *CPU) getRegister16Mem(opcode byte, bits []int) *memory.MemoryReference8 {
+	index := utils.ExtractBits(opcode, bits)
 	switch index {
 	case 0:
 		return c.byteAt(c.reg.bc.Read())
@@ -637,7 +642,7 @@ func (c *CPU) getRegister16Mem(opcode byte, bits []int) *MemoryReference8 {
 }
 
 func (c *CPU) getCond(opcode byte, bits []int) bool {
-	index := ExtractBits(opcode, bits)
+	index := utils.ExtractBits(opcode, bits)
 	switch index {
 	case 0:
 		return !c.reg.f.Z()
@@ -706,7 +711,7 @@ func (i *Instruction) add_hl_r16(c *CPU) {
 	c.reg.hl.Write(res)
 
 	c.reg.f.SetN(false)
-	c.reg.f.SetH(IsHalfCarry16(hl, r16))
+	c.reg.f.SetH(utils.IsHalfCarry16(hl, r16))
 	c.reg.f.SetC(res < hl)
 }
 
@@ -719,7 +724,7 @@ func (i *Instruction) inc_r8(c *CPU) {
 
 	c.reg.f.SetZ(res == 0)
 	c.reg.f.SetN(false)
-	c.reg.f.SetH(IsHalfCarry8(oldR8, 1))
+	c.reg.f.SetH(utils.IsHalfCarry8(oldR8, 1))
 }
 
 func (i *Instruction) dec_r8(c *CPU) {
@@ -731,7 +736,7 @@ func (i *Instruction) dec_r8(c *CPU) {
 
 	c.reg.f.SetZ(res == 0)
 	c.reg.f.SetN(true)
-	c.reg.f.SetH(IsHalfBorrow8(oldR8, 1))
+	c.reg.f.SetH(utils.IsHalfBorrow8(oldR8, 1))
 }
 
 func (i *Instruction) ld_r8_imm8(c *CPU) {
@@ -744,7 +749,7 @@ func (i *Instruction) ld_r8_imm8(c *CPU) {
 func (i *Instruction) rlca(c *CPU) {
 	a := c.reg.a.Read()
 
-	res, carry := RotateLeft(a)
+	res, carry := utils.RotateLeft(a)
 	c.reg.a.Write(res)
 
 	c.reg.f.SetZ(false)
@@ -756,7 +761,7 @@ func (i *Instruction) rlca(c *CPU) {
 func (i *Instruction) rrca(c *CPU) {
 	a := c.reg.a.Read()
 
-	res, carry := RotateRight(a)
+	res, carry := utils.RotateRight(a)
 	c.reg.a.Write(res)
 
 	c.reg.f.SetZ(false)
@@ -768,7 +773,7 @@ func (i *Instruction) rrca(c *CPU) {
 func (i *Instruction) rla(c *CPU) {
 	a := c.reg.a.Read()
 
-	res, carry := RotateLeftThroughCarry(a, c.reg.f.C())
+	res, carry := utils.RotateLeftThroughCarry(a, c.reg.f.C())
 	c.reg.a.Write(res)
 
 	c.reg.f.SetZ(false)
@@ -780,7 +785,7 @@ func (i *Instruction) rla(c *CPU) {
 func (i *Instruction) rra(c *CPU) {
 	a := c.reg.a.Read()
 
-	res, carry := RotateRightThroughCarry(a, c.reg.f.C())
+	res, carry := utils.RotateRightThroughCarry(a, c.reg.f.C())
 	c.reg.a.Write(res)
 
 	c.reg.f.SetZ(false)
@@ -885,21 +890,21 @@ func (i *Instruction) add_a_r8(c *CPU) {
 
 	c.reg.f.SetZ(res == 0)
 	c.reg.f.SetN(false)
-	c.reg.f.SetH(IsHalfCarry8(a, r8))
+	c.reg.f.SetH(utils.IsHalfCarry8(a, r8))
 	c.reg.f.SetC(res < a)
 }
 
 func (i *Instruction) adc_a_r8(c *CPU) {
 	a := c.reg.a.Read()
 	r8 := c.getRegister8(i.Opcode, []int{2, 1, 0}).Read()
-	carry := AsUint8(c.reg.f.C())
+	carry := utils.AsUint8(c.reg.f.C())
 
 	res := a + r8 + carry
 	c.reg.a.Write(res)
 
 	c.reg.f.SetZ(res == 0)
 	c.reg.f.SetN(false)
-	c.reg.f.SetH(IsHalfCarryWithCarry8(a, r8, carry))
+	c.reg.f.SetH(utils.IsHalfCarryWithCarry8(a, r8, carry))
 	c.reg.f.SetC(res <= a && (r8 != 0 || carry != 0))
 }
 
@@ -912,21 +917,21 @@ func (i *Instruction) sub_a_r8(c *CPU) {
 
 	c.reg.f.SetZ(res == 0)
 	c.reg.f.SetN(true)
-	c.reg.f.SetH(IsHalfBorrow8(a, r8))
+	c.reg.f.SetH(utils.IsHalfBorrow8(a, r8))
 	c.reg.f.SetC(r8 > a)
 }
 
 func (i *Instruction) sbc_a_r8(c *CPU) {
 	a := c.reg.a.Read()
 	r8 := c.getRegister8(i.Opcode, []int{2, 1, 0}).Read()
-	carry := AsUint8(c.reg.f.C())
+	carry := utils.AsUint8(c.reg.f.C())
 
 	res := a - r8 - carry
 	c.reg.a.Write(res)
 
 	c.reg.f.SetZ(res == 0)
 	c.reg.f.SetN(true)
-	c.reg.f.SetH(IsHalfBorrowWithCarry8(a, r8, carry))
+	c.reg.f.SetH(utils.IsHalfBorrowWithCarry8(a, r8, carry))
 	c.reg.f.SetC(res >= a && (r8 != 0 || carry != 0))
 }
 
@@ -977,7 +982,7 @@ func (i *Instruction) cp_a_r8(c *CPU) {
 
 	c.reg.f.SetZ(res == 0)
 	c.reg.f.SetN(true)
-	c.reg.f.SetH(IsHalfBorrow8(a, r8))
+	c.reg.f.SetH(utils.IsHalfBorrow8(a, r8))
 	c.reg.f.SetC(r8 > a)
 }
 
@@ -991,21 +996,21 @@ func (i *Instruction) add_a_imm8(c *CPU) {
 
 	c.reg.f.SetZ(res == 0)
 	c.reg.f.SetN(false)
-	c.reg.f.SetH(IsHalfCarry8(a, imm8))
+	c.reg.f.SetH(utils.IsHalfCarry8(a, imm8))
 	c.reg.f.SetC(res < a)
 }
 
 func (i *Instruction) adc_a_imm8(c *CPU) {
 	a := c.reg.a.Read()
 	imm8 := c.getImm8()
-	carry := AsUint8(c.reg.f.C())
+	carry := utils.AsUint8(c.reg.f.C())
 
 	res := a + imm8 + carry
 	c.reg.a.Write(res)
 
 	c.reg.f.SetZ(res == 0)
 	c.reg.f.SetN(false)
-	c.reg.f.SetH(IsHalfCarryWithCarry8(a, imm8, carry))
+	c.reg.f.SetH(utils.IsHalfCarryWithCarry8(a, imm8, carry))
 	c.reg.f.SetC(res <= a && (imm8 != 0 || carry != 0))
 }
 
@@ -1018,21 +1023,21 @@ func (i *Instruction) sub_a_imm8(c *CPU) {
 
 	c.reg.f.SetZ(res == 0)
 	c.reg.f.SetN(true)
-	c.reg.f.SetH(IsHalfBorrow8(a, imm8))
+	c.reg.f.SetH(utils.IsHalfBorrow8(a, imm8))
 	c.reg.f.SetC(imm8 > a)
 }
 
 func (i *Instruction) sbc_a_imm8(c *CPU) {
 	a := c.reg.a.Read()
 	imm8 := c.getImm8()
-	carry := AsUint8(c.reg.f.C())
+	carry := utils.AsUint8(c.reg.f.C())
 
 	res := a - imm8 - carry
 	c.reg.a.Write(res)
 
 	c.reg.f.SetZ(res == 0)
 	c.reg.f.SetN(true)
-	c.reg.f.SetH(IsHalfBorrowWithCarry8(a, imm8, carry))
+	c.reg.f.SetH(utils.IsHalfBorrowWithCarry8(a, imm8, carry))
 	c.reg.f.SetC(res >= a && (imm8 != 0 || carry != 0))
 }
 
@@ -1083,7 +1088,7 @@ func (i *Instruction) cp_a_imm8(c *CPU) {
 
 	c.reg.f.SetZ(res == 0)
 	c.reg.f.SetN(true)
-	c.reg.f.SetH(IsHalfBorrow8(a, imm8))
+	c.reg.f.SetH(utils.IsHalfBorrow8(a, imm8))
 	c.reg.f.SetC(imm8 > a)
 }
 
@@ -1158,7 +1163,7 @@ func (i *Instruction) call_imm16(c *CPU) {
 }
 
 func (i *Instruction) rst_tgt3(c *CPU) {
-	tgt := ExtractBits(i.Opcode, []int{5, 4, 3}) << 3
+	tgt := utils.ExtractBits(i.Opcode, []int{5, 4, 3}) << 3
 
 	sp := c.reg.sp.Read()
 	pc := c.reg.pc.Read()
@@ -1237,7 +1242,7 @@ func (i *Instruction) add_sp_imm8(c *CPU) {
 
 	c.reg.f.SetZ(false)
 	c.reg.f.SetN(false)
-	c.reg.f.SetH(IsHalfCarry8(uint8(sp&0xFF), imm8))
+	c.reg.f.SetH(utils.IsHalfCarry8(uint8(sp&0xFF), imm8))
 	c.reg.f.SetC(uint8(res&0xFF) < uint8(sp&0xFF))
 }
 
@@ -1251,7 +1256,7 @@ func (i *Instruction) ld_hl_sp_plus_imm8(c *CPU) {
 
 	c.reg.f.SetZ(false)
 	c.reg.f.SetN(false)
-	c.reg.f.SetH(IsHalfCarry8(uint8(sp&0xFF), imm8))
+	c.reg.f.SetH(utils.IsHalfCarry8(uint8(sp&0xFF), imm8))
 	c.reg.f.SetC(uint8(res&0xFF) < uint8(sp&0xFF))
 }
 
@@ -1275,7 +1280,7 @@ func (i *Instruction) ei(c *CPU) {
 func (i *Instruction) rlc_r8(c *CPU) {
 	r8 := c.getRegister8(i.Opcode, []int{2, 1, 0})
 
-	res, carry := RotateLeft(r8.Read())
+	res, carry := utils.RotateLeft(r8.Read())
 	r8.Write(res)
 
 	c.reg.f.SetZ(res == 0)
@@ -1287,7 +1292,7 @@ func (i *Instruction) rlc_r8(c *CPU) {
 func (i *Instruction) rrc_r8(c *CPU) {
 	r8 := c.getRegister8(i.Opcode, []int{2, 1, 0})
 
-	res, carry := RotateRight(r8.Read())
+	res, carry := utils.RotateRight(r8.Read())
 	r8.Write(res)
 
 	c.reg.f.SetZ(res == 0)
@@ -1299,7 +1304,7 @@ func (i *Instruction) rrc_r8(c *CPU) {
 func (i *Instruction) rl_r8(c *CPU) {
 	r8 := c.getRegister8(i.Opcode, []int{2, 1, 0})
 
-	res, carry := RotateLeftThroughCarry(r8.Read(), c.reg.f.C())
+	res, carry := utils.RotateLeftThroughCarry(r8.Read(), c.reg.f.C())
 	r8.Write(res)
 
 	c.reg.f.SetZ(res == 0)
@@ -1311,7 +1316,7 @@ func (i *Instruction) rl_r8(c *CPU) {
 func (i *Instruction) rr_r8(c *CPU) {
 	r8 := c.getRegister8(i.Opcode, []int{2, 1, 0})
 
-	res, carry := RotateRightThroughCarry(r8.Read(), c.reg.f.C())
+	res, carry := utils.RotateRightThroughCarry(r8.Read(), c.reg.f.C())
 	r8.Write(res)
 
 	c.reg.f.SetZ(res == 0)
@@ -1323,7 +1328,7 @@ func (i *Instruction) rr_r8(c *CPU) {
 func (i *Instruction) sla_r8(c *CPU) {
 	r8 := c.getRegister8(i.Opcode, []int{2, 1, 0})
 
-	res, carry := ShiftLeftArithmetic(r8.Read())
+	res, carry := utils.ShiftLeftArithmetic(r8.Read())
 	r8.Write(res)
 
 	c.reg.f.SetZ(res == 0)
@@ -1335,7 +1340,7 @@ func (i *Instruction) sla_r8(c *CPU) {
 func (i *Instruction) sra_r8(c *CPU) {
 	r8 := c.getRegister8(i.Opcode, []int{2, 1, 0})
 
-	res, carry := ShiftRightArithmetic(r8.Read())
+	res, carry := utils.ShiftRightArithmetic(r8.Read())
 	r8.Write(res)
 
 	c.reg.f.SetZ(res == 0)
@@ -1347,7 +1352,7 @@ func (i *Instruction) sra_r8(c *CPU) {
 func (i *Instruction) swap_r8(c *CPU) {
 	r8 := c.getRegister8(i.Opcode, []int{2, 1, 0})
 
-	res := Swap(r8.Read())
+	res := utils.Swap(r8.Read())
 	r8.Write(res)
 
 	c.reg.f.SetZ(res == 0)
@@ -1359,7 +1364,7 @@ func (i *Instruction) swap_r8(c *CPU) {
 func (i *Instruction) srl_r8(c *CPU) {
 	r8 := c.getRegister8(i.Opcode, []int{2, 1, 0})
 
-	res, carry := ShiftRightLogic(r8.Read())
+	res, carry := utils.ShiftRightLogic(r8.Read())
 	r8.Write(res)
 
 	c.reg.f.SetZ(res == 0)
@@ -1369,26 +1374,26 @@ func (i *Instruction) srl_r8(c *CPU) {
 }
 
 func (i *Instruction) bit_b3_r8(c *CPU) {
-	b3 := ExtractBits(i.Opcode, []int{5, 4, 3})
+	b3 := utils.ExtractBits(i.Opcode, []int{5, 4, 3})
 	r8 := c.getRegister8(i.Opcode, []int{2, 1, 0})
 
-	c.reg.f.SetZ(!IsBitSet(r8.Read(), b3))
+	c.reg.f.SetZ(!utils.IsBitSet(r8.Read(), b3))
 	c.reg.f.SetN(false)
 	c.reg.f.SetH(true)
 }
 
 func (i *Instruction) res_b3_r8(c *CPU) {
-	b3 := ExtractBits(i.Opcode, []int{5, 4, 3})
+	b3 := utils.ExtractBits(i.Opcode, []int{5, 4, 3})
 	r8 := c.getRegister8(i.Opcode, []int{2, 1, 0})
 
-	res := ResetBit(r8.Read(), b3)
+	res := utils.ResetBit(r8.Read(), b3)
 	r8.Write(res)
 }
 
 func (i *Instruction) set_b3_r8(c *CPU) {
-	b3 := ExtractBits(i.Opcode, []int{5, 4, 3})
+	b3 := utils.ExtractBits(i.Opcode, []int{5, 4, 3})
 	r8 := c.getRegister8(i.Opcode, []int{2, 1, 0})
 
-	res := SetBit(r8.Read(), b3)
+	res := utils.SetBit(r8.Read(), b3)
 	r8.Write(res)
 }

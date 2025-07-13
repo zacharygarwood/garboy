@@ -1,37 +1,27 @@
-package main
+package cpu
 
-type Register8 interface {
-	Read() uint8
-	Write(uint8)
-}
-
-type Register16 interface {
-	Read() uint16
-	Write(uint16)
-	Increment() uint16
-	Decrement() uint16
-	PostIncrement() uint16
-	PostDecrement() uint16
-}
+import (
+	"garboy/memory"
+)
 
 type Registers struct {
-	a Register8
-	b Register8
-	c Register8
-	d Register8
-	e Register8
-	h Register8
-	l Register8
+	a memory.Register8
+	b memory.Register8
+	c memory.Register8
+	d memory.Register8
+	e memory.Register8
+	h memory.Register8
+	l memory.Register8
 
 	f *FlagRegister // Stores flags, not a real register
 
-	af Register16
-	bc Register16
-	de Register16
-	hl Register16
+	af memory.Register16
+	bc memory.Register16
+	de memory.Register16
+	hl memory.Register16
 
-	sp Register16
-	pc Register16
+	sp memory.Register16
+	pc memory.Register16
 }
 
 type SingleRegister8 struct {
@@ -43,16 +33,12 @@ type SingleRegister16 struct {
 }
 
 type CombinedRegister16 struct {
-	hi Register8
-	lo Register8
+	hi memory.Register8
+	lo memory.Register8
 }
 
 type FlagRegister struct {
 	val uint8 // Only top four bits matter so operations use masks
-}
-
-type InterruptRegister struct {
-	val byte
 }
 
 func NewRegisters() *Registers {
@@ -216,12 +202,4 @@ func (f *FlagRegister) SetC(val bool) {
 	} else {
 		f.val &^= 1 << 4
 	}
-}
-
-func (i *InterruptRegister) Read() uint8 {
-	return i.val
-}
-
-func (i *InterruptRegister) Write(val uint8) {
-	i.val = val
 }

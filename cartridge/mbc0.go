@@ -1,14 +1,12 @@
-package main
+package cartridge
 
-const (
-	RomBankXEnd = 0x7FFF
-	RamStart    = 0xA000
-	RamEnd      = 0xBFFF
+import (
+	"garboy/memory"
 )
 
 type MBC0 struct {
-	rom     Memory
-	ram     Memory
+	rom     memory.Memory
+	ram     memory.Memory
 	ramSize int
 }
 
@@ -18,8 +16,8 @@ func NewMBC0(romData []uint8, header CartridgeHeader) *MBC0 {
 	copy(rom, romData)
 
 	return &MBC0{
-		rom:     NewROM(rom),
-		ram:     NewRAM(ramSize),
+		rom:     memory.NewROM(rom),
+		ram:     memory.NewRAM(ramSize),
 		ramSize: ramSize,
 	}
 }

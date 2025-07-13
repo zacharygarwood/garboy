@@ -1,4 +1,4 @@
-package main
+package cartridge
 
 type MBC interface {
 	Read(addr uint16) uint8

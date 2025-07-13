@@ -1,18 +1,4 @@
-package main
-
-const (
-	RomBank0End       = 0x3FFF
-	RomBankXStart     = 0x4000
-	RomBankSize       = 0x4000
-	RamBankSize       = 0x2000
-	MBC1RamEnableEnd  = 0x1FFF
-	MBC1RomBankStart  = 0x2000
-	MBC1RomBankEnd    = 0x3FFF
-	MBC1RamBankStart  = 0x4000
-	MBC1RamBankEnd    = 0x5FFF
-	MBC1BankModeStart = 0x6000
-	MBC1BankModeEnd   = 0x7FFF
-)
+package cartridge
 
 type MBC1 struct {
 	rom        []byte

@@ -1,17 +1,7 @@
-package main
+package cartridge
 
 import (
 	"time"
-)
-
-const (
-	MBC3RamEnableEnd = 0x1FFF
-	MBC3RomBankStart = 0x2000
-	MBC3RomBankEnd   = 0x3FFF
-	MBC3RamBankStart = 0x4000
-	MBC3RamBankEnd   = 0x5FFF
-	MBC3LatchStart   = 0x6000
-	MBC3LatchEnd     = 0x7FFF
 )
 
 type MBC3 struct {

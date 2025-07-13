@@ -36,3 +36,4 @@ instruction_gen.py
 opcodes.json
 output_files
 roms
+misc

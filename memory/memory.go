@@ -1,4 +1,4 @@
-package main
+package memory
 
 type Memory interface {
 	Read(offset uint16) byte
@@ -63,26 +63,26 @@ func (io *IORegisters) Write(offset uint16, val byte) {
 // Not the greatest, but I had to add this so that the byte in memory returned by cpu.byteAt() would be treated as a Register8
 // Ex: INC (HL) calls inc_r8 which takes Register8. Called like inc_r8(c.byteAt(c.reg.hl.Read()))
 type MemoryReference8 struct {
-	cpu  *CPU
-	addr uint16
+	Mmu  Memory
+	Addr uint16
 }
 
 func (m *MemoryReference8) Read() uint8 {
-	return m.cpu.mmu.Read(m.addr)
+	return m.Mmu.Read(m.Addr)
 }
 
 func (m *MemoryReference8) Write(val uint8) {
-	m.cpu.mmu.Write(m.addr, val)
+	m.Mmu.Write(m.Addr, val)
 }
 
 func (m *MemoryReference8) Increment() uint8 {
-	res := m.cpu.mmu.Read(m.addr) + 1
-	m.cpu.mmu.Write(m.addr, res)
+	res := m.Mmu.Read(m.Addr) + 1
+	m.Mmu.Write(m.Addr, res)
 	return res
 }
 
 func (m *MemoryReference8) Decrement() uint8 {
-	res := m.cpu.mmu.Read(m.addr) - 1
-	m.cpu.mmu.Write(m.addr, res)
+	res := m.Mmu.Read(m.Addr) - 1
+	m.Mmu.Write(m.Addr, res)
 	return res
 }

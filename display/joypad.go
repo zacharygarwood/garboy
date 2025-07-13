@@ -1,7 +1,9 @@
-package main
+package display
 
 import (
 	"github.com/hajimehoshi/ebiten/v2"
+
+	"garboy/utils"
 )
 
 const (
@@ -36,35 +38,35 @@ func (j *Joypad) Update() {
 	j.buttonState = 0xFF
 
 	if ebiten.IsKeyPressed(ebiten.KeyRight) {
-		j.buttonState = ResetBit(j.buttonState, JoypadRight)
+		j.buttonState = utils.ResetBit(j.buttonState, JoypadRight)
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeyLeft) {
-		j.buttonState = ResetBit(j.buttonState, JoypadLeft)
+		j.buttonState = utils.ResetBit(j.buttonState, JoypadLeft)
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeyUp) {
-		j.buttonState = ResetBit(j.buttonState, JoypadUp)
+		j.buttonState = utils.ResetBit(j.buttonState, JoypadUp)
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeyDown) {
-		j.buttonState = ResetBit(j.buttonState, JoypadDown)
+		j.buttonState = utils.ResetBit(j.buttonState, JoypadDown)
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeyX) {
-		j.buttonState = ResetBit(j.buttonState, JoypadA)
+		j.buttonState = utils.ResetBit(j.buttonState, JoypadA)
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeyZ) {
-		j.buttonState = ResetBit(j.buttonState, JoypadB)
+		j.buttonState = utils.ResetBit(j.buttonState, JoypadB)
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeyEnter) {
-		j.buttonState = ResetBit(j.buttonState, JoypadSelect)
+		j.buttonState = utils.ResetBit(j.buttonState, JoypadSelect)
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeyShift) {
-		j.buttonState = ResetBit(j.buttonState, JoypadStart)
+		j.buttonState = utils.ResetBit(j.buttonState, JoypadStart)
 	}
 }
 

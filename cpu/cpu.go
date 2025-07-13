@@ -1,6 +1,13 @@
-package main
+package cpu
 
-import "fmt"
+import (
+	"fmt"
+
+	"garboy/interrupts"
+	"garboy/memory"
+	"garboy/mmu"
+	"garboy/utils"
+)
 
 const (
 	InterruptCycles = 20
@@ -8,17 +15,17 @@ const (
 )
 
 var InterruptSources = []uint16{
-	VBlankInterruptSource,
-	StatInterruptSource,
-	TimerInterruptSource,
-	SerialInterruptSource,
-	JoypadInterruptSource,
+	interrupts.VBlankInterruptSource,
+	interrupts.StatInterruptSource,
+	interrupts.TimerInterruptSource,
+	interrupts.SerialInterruptSource,
+	interrupts.JoypadInterruptSource,
 }
 
 type CPU struct {
 	reg        *Registers
-	mmu        MmuInterface
-	interrupts *Interrupts
+	mmu        mmu.MmuInterface
+	interrupts *interrupts.Interrupts
 
 	branched              bool
 	halted                bool
@@ -28,7 +35,7 @@ type CPU struct {
 	imeDelay uint8
 }
 
-func NewCPU(mmu MmuInterface, interrupts *Interrupts) *CPU {
+func NewCPU(mmu mmu.MmuInterface, interrupts *interrupts.Interrupts) *CPU {
 	return &CPU{
 		reg:                   NewRegisters(),
 		mmu:                   mmu,
@@ -113,7 +120,7 @@ func (c *CPU) handleInterrupts() bool {
 
 	for i := 0; i < len(InterruptSources); i++ {
 		interrupt := uint8(i)
-		if IsBitSet(pending, interrupt) {
+		if utils.IsBitSet(pending, interrupt) {
 			c.interrupts.Clear(interrupt)
 			c.interruptMasterEnable = false
 
@@ -153,6 +160,20 @@ func (c *CPU) SkipBootROM() {
 	c.reg.pc.Write(0x0100)
 
 	c.mmu.SetBootRomEnabled(false)
+}
+
+// Used for testing. Ideally Registers would be returned but I'd need to make each field public and I don't want to update the instructions
+func (c *CPU) GetState() (memory.Register8, memory.Register8, memory.Register8, memory.Register8, memory.Register8, memory.Register8, memory.Register8, memory.Register8, memory.Register16, memory.Register16) {
+	return c.reg.a,
+		c.reg.f,
+		c.reg.b,
+		c.reg.c,
+		c.reg.d,
+		c.reg.e,
+		c.reg.h,
+		c.reg.l,
+		c.reg.sp,
+		c.reg.pc
 }
 
 func (c *CPU) PrintState() {
