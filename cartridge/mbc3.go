@@ -2,6 +2,8 @@ package cartridge
 
 import (
 	"time"
+
+	"garboy/addresses"
 )
 
 type MBC3 struct {
@@ -41,16 +43,16 @@ func NewMBC3(data []byte, header CartridgeHeader) *MBC3 {
 
 func (m *MBC3) Read(address uint16) byte {
 	switch {
-	case address < RomBank1Address:
+	case address < addresses.RomBank1:
 		return m.rom[address]
-	case address < VramAddress:
+	case address < addresses.Vram:
 		bankOffset := int(m.romBank) * RomBankSize
-		romAddress := bankOffset + int(address-RomBank1Address)
+		romAddress := bankOffset + int(address-addresses.RomBank1)
 		if romAddress < len(m.rom) {
 			return m.rom[romAddress]
 		}
 		return 0xFF
-	case address >= ExternalRamAddress && address < WramAddress:
+	case address >= addresses.ExternalRam && address < addresses.Wram:
 		if !m.ramEnabled {
 			return 0xFF
 		}
@@ -59,7 +61,7 @@ func (m *MBC3) Read(address uint16) byte {
 			if !m.hasRam {
 				return 0xFF
 			}
-			ramAddress := int(m.ramBank)*RamBankSize + int(address-ExternalRamAddress)
+			ramAddress := int(m.ramBank)*RamBankSize + int(address-addresses.ExternalRam)
 			if ramAddress < len(m.ram) {
 				return m.ram[ramAddress]
 			}
@@ -75,24 +77,24 @@ func (m *MBC3) Read(address uint16) byte {
 
 func (m *MBC3) Write(address uint16, val byte) {
 	switch {
-	case address < MBC3RomBankStart:
+	case address < addresses.MBC3RomBankStart:
 		m.ramEnabled = (val & 0x0F) == 0x0A
-	case address < MBC3RamBankStart:
+	case address < addresses.MBC3RamBankStart:
 		bank := val & 0x7F
 		if bank == 0 {
 			bank = 1
 		}
 		m.romBank = bank
-	case address < MBC3LatchStart:
+	case address < addresses.MBC3LatchStart:
 		m.ramBank = val
-	case address < VramAddress:
+	case address < addresses.Vram:
 		if m.hasTimer {
 			if m.rtcLatchData == 0x00 && val == 0x01 {
 				m.latchRTC()
 			}
 			m.rtcLatchData = val
 		}
-	case address >= ExternalRamAddress && address < WramAddress:
+	case address >= addresses.ExternalRam && address < addresses.Wram:
 		if !m.ramEnabled {
 			return
 		}
@@ -101,7 +103,7 @@ func (m *MBC3) Write(address uint16, val byte) {
 			if !m.hasRam {
 				return
 			}
-			ramAddress := int(m.ramBank)*RamBankSize + int(address-ExternalRamAddress)
+			ramAddress := int(m.ramBank)*RamBankSize + int(address-addresses.ExternalRam)
 			if ramAddress < len(m.ram) {
 				m.ram[ramAddress] = val
 			}

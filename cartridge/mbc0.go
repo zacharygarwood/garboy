@@ -1,6 +1,7 @@
 package cartridge
 
 import (
+	"garboy/addresses"
 	"garboy/memory"
 )
 
@@ -24,11 +25,11 @@ func NewMBC0(romData []uint8, header CartridgeHeader) *MBC0 {
 
 func (m *MBC0) Read(address uint16) uint8 {
 	switch {
-	case address <= RomBankXEnd:
+	case address <= addresses.RomBankXEnd:
 		return m.rom.Read(address)
-	case address >= RamStart && address <= RamEnd:
+	case address >= addresses.RamStart && address <= addresses.RamEnd:
 		if m.ramSize > 0 {
-			return m.ram.Read(address - RamStart)
+			return m.ram.Read(address - addresses.RamStart)
 		}
 		return 0xFF
 	default:
@@ -38,11 +39,11 @@ func (m *MBC0) Read(address uint16) uint8 {
 
 func (m *MBC0) Write(address uint16, val uint8) {
 	switch {
-	case address <= RomBankXEnd:
+	case address <= addresses.RomBankXEnd:
 		return
-	case address >= RamStart && address <= RamEnd:
+	case address >= addresses.RamStart && address <= addresses.RamEnd:
 		if m.ramSize > 0 {
-			m.ram.Write(address-RamStart, val)
+			m.ram.Write(address-addresses.RamStart, val)
 		}
 	}
 }

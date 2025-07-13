@@ -1,5 +1,10 @@
 package cartridge
 
+const (
+	RomBankSize = 0x4000
+	RamBankSize = 0x2000
+)
+
 type MBC interface {
 	Read(addr uint16) uint8
 	Write(addr uint16, value uint8)

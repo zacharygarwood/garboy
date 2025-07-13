@@ -1,5 +1,9 @@
 package cartridge
 
+import (
+	"garboy/addresses"
+)
+
 type MBC1 struct {
 	rom        []byte
 	ram        []byte
@@ -30,24 +34,24 @@ func NewMBC1(data []byte, header CartridgeHeader) *MBC1 {
 
 func (m *MBC1) Read(address uint16) byte {
 	switch {
-	case address < MBC1RamBankStart:
+	case address < addresses.MBC1RamBankStart:
 		bankOffset := 0
 		if m.bankMode == 1 {
 			bankOffset = int(m.ramBank) << 5
 		}
 		return m.rom[bankOffset*RomBankSize+int(address)]
-	case address < VramAddress:
+	case address < addresses.Vram:
 		actualBank := m.romBank
 		if m.bankMode == 0 {
 			actualBank |= m.ramBank << 5
 		}
 		bankOffset := int(actualBank) * RomBankSize
-		romAddress := bankOffset + int(address-MBC1RamBankStart)
+		romAddress := bankOffset + int(address-addresses.MBC1RamBankStart)
 		if romAddress < len(m.rom) {
 			return m.rom[romAddress]
 		}
 		return 0xFF
-	case address >= ExternalRamAddress && address < WramAddress:
+	case address >= addresses.ExternalRam && address < addresses.Wram:
 		if !m.ramEnabled || !m.hasRam {
 			return 0xFF
 		}
@@ -57,7 +61,7 @@ func (m *MBC1) Read(address uint16) byte {
 			actualRamBank = m.ramBank
 		}
 
-		ramAddress := int(actualRamBank)*RamBankSize + int(address-ExternalRamAddress)
+		ramAddress := int(actualRamBank)*RamBankSize + int(address-addresses.ExternalRam)
 		if ramAddress < len(m.ram) {
 			return m.ram[ramAddress]
 		}
@@ -69,19 +73,19 @@ func (m *MBC1) Read(address uint16) byte {
 
 func (m *MBC1) Write(address uint16, val byte) {
 	switch {
-	case address < MBC1RomBankStart:
+	case address < addresses.MBC1RomBankStart:
 		m.ramEnabled = (val & 0x0F) == 0x0A
-	case address < MBC1RamBankStart:
+	case address < addresses.MBC1RamBankStart:
 		bank := val & 0x1F
 		if bank == 0 {
 			bank = 1
 		}
 		m.romBank = bank
-	case address < MBC1BankModeStart:
+	case address < addresses.MBC1BankModeStart:
 		m.ramBank = val & 0x03
-	case address < VramAddress:
+	case address < addresses.Vram:
 		m.bankMode = val & 0x01
-	case address >= ExternalRamAddress && address < WramAddress:
+	case address >= addresses.ExternalRam && address < addresses.Wram:
 		if !m.ramEnabled || !m.hasRam {
 			return
 		}

@@ -47,10 +47,9 @@ const (
 	RamEnd      = 0xBFFF
 
 	// MBC1
-	RomBank0End       = 0x3FFF
-	RomBankXStart     = 0x4000
-	RomBankSize       = 0x4000
-	RamBankSize       = 0x2000
+	RomBank0End   = 0x3FFF
+	RomBankXStart = 0x4000
+
 	MBC1RamEnableEnd  = 0x1FFF
 	MBC1RomBankStart  = 0x2000
 	MBC1RomBankEnd    = 0x3FFF
