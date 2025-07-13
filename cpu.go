@@ -55,8 +55,6 @@ func (c *CPU) Step() uint16 {
 		return HaltedCycles
 	}
 
-	//c.PrintState()
-
 	opcode := c.fetch()
 	instruction := c.decode(opcode)
 	return c.execute(instruction)

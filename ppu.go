@@ -475,17 +475,14 @@ func (p *PPU) writeVram(address uint16, val uint8) {
 }
 
 func (p *PPU) readOam(address uint16) uint8 {
-	//fmt.Printf("[DEBUG] Reading from OAM. address: %x\n", address)
 	return p.oam.Read(address - OamAddress)
 }
 
 func (p *PPU) writeOam(address uint16, val uint8) {
-	//fmt.Printf("[DEBUG] Writing to OAM. address: %x, val: %x\n", address, val)
 	p.oam.Write(address-OamAddress, val)
 }
 
 func (p *PPU) Read(address uint16) uint8 {
-	//fmt.Printf("[DEBUG] In Read(). address: %x\n", address)
 	switch address {
 	case LcdControlAddress:
 		return p.lcdc
@@ -523,7 +520,6 @@ func (p *PPU) Read(address uint16) uint8 {
 }
 
 func (p *PPU) Write(address uint16, val uint8) {
-	//fmt.Printf("[DEBUG] In Write(), address: %x, val: %x\n", address, val)
 	switch address {
 	case LcdControlAddress:
 		prevEnabled := p.isLcdEnabled()
