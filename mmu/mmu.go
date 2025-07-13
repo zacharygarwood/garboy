@@ -119,8 +119,8 @@ func (m *MMU) Write(address uint16, val byte) {
 		return // Not usable
 	case address == addresses.IoRegisters:
 		m.joypad.Write(val)
-	case address == 0xFF02 && val == 0x81: // FIXME: Used for Blargg's CPU tests
-		out := m.Read(0xFF01)
+	case address == addresses.SerialTransfer && val == 0x81: // NOTE: Used for Blargg's CPU tests. Serial not implemented
+		out := m.Read(addresses.SerialBuffer)
 		fmt.Printf("%c", out)
 	case address >= addresses.Div && address <= addresses.Tac:
 		m.timer.Write(address, val)
@@ -130,7 +130,7 @@ func (m *MMU) Write(address uint16, val byte) {
 		m.DmaTransfer(val)
 	case address >= addresses.LcdControl && address <= addresses.WindowX:
 		m.ppu.Write(address, val)
-	case address == 0xFF50 && m.bootROMEnabled && val != 0:
+	case address == addresses.BootRomControl && m.bootROMEnabled && val != 0:
 		m.bootROMEnabled = false
 	case address < addresses.Hram:
 		m.io.Write(address-addresses.IoRegisters, val)

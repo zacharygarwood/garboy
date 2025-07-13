@@ -2,16 +2,17 @@ package addresses
 
 const (
 	// Main memory
-	RomBank1     = 0x4000
-	Vram         = 0x8000
-	ExternalRam  = 0xA000
-	Wram         = 0xC000
-	EchoRam      = 0xE000
-	Oam          = 0xFE00
-	NotUsable    = 0xFEA0
-	IoRegisters  = 0xFF00
-	SerialBuffer = 0xFF01
-	Hram         = 0xFF80
+	RomBank1       = 0x4000
+	Vram           = 0x8000
+	ExternalRam    = 0xA000
+	Wram           = 0xC000
+	EchoRam        = 0xE000
+	Oam            = 0xFE00
+	NotUsable      = 0xFEA0
+	IoRegisters    = 0xFF00
+	SerialBuffer   = 0xFF01
+	SerialTransfer = 0xFF02
+	Hram           = 0xFF80
 
 	// End of memory addresses
 	VramEnd = 0x9FFF
@@ -40,6 +41,9 @@ const (
 	ObP1Palette = 0xFF49
 	WindowY     = 0xFF4A
 	WindowX     = 0xFF4B
+
+	// Boot ROM
+	BootRomControl = 0xFF50
 
 	// MBC0
 	RomBankXEnd = 0x7FFF

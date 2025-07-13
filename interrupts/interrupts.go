@@ -1,5 +1,9 @@
 package interrupts
 
+import (
+	"garboy/addresses"
+)
+
 const (
 	// Interrupt bits
 	VBlankInterrupt = 0
@@ -38,9 +42,9 @@ func (i *Interrupts) IE() uint8 {
 
 func (i *Interrupts) Write(address uint16, val uint8) {
 	switch address {
-	case 0xFF0F:
+	case addresses.InterruptFlag:
 		i.interruptFlag.Write(val)
-	case 0xFFFF:
+	case addresses.InterruptEnable:
 		i.interruptEnable.Write(val)
 	default:
 		panic("Invalid address when writing to interrupts")
