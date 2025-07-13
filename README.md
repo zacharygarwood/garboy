@@ -34,19 +34,19 @@ You should see a window appear with your ROM running after this.
 This will go through all of the CPU single step tests and various test ROMs.
 
 ## Screenshots
-![pokemon](./assets/png/pokemon.png)
-![zelda](./assets/png/zelda.png)
-![kirby](./assets/png/kirby.png)
-![tennis](./assets/png/tennis.png)
-![mario](./assets/png/mario.png)
-![dr-mario](./assets/png/dr-mario.png)
+<img src="./assets/png/pokemon.png" width=300px height=auto>
+<img src="./assets/png/zelda.png" width=300px height=auto>
+<img src="./assets/png/kirby.png" width=300px height=auto>
+<img src="./assets/png/tennis.png" width=300px height=auto>
+<img src="./assets/png/mario.png" width=300px height=auto>
+<img src="./assets/png/dr-mario.png" width=300px height=auto>
 
 ## Gameplay
 
-![pokemon](./assets/gif/pokemon.gif)
-![zelda](./assets/gif/zelda.gif)
-![kirby](./assets/gif/kirby.gif)
-![tennis](./assets/gif/tennis.gif)
+<img src="./assets/gif/pokemon.gif" width=300px height=auto>
+<img src="./assets/gif/zelda.gif" width=300px height=auto>
+<img src="./assets/gif/kirby.gif" width=300px height=auto>
+<img src="./assets/gif/tennis.gif" width=300px height=auto>
 
 ## Compatibility
 
