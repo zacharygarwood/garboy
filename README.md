@@ -6,7 +6,7 @@ A Gameboy emulator made by Zach (Gar)wood
 
 ## Features
 
-- **Accurate Emulation**: Replicates the Gameboy hardware behavior *enough* for the experience you know and love. Not 100% cycle accurate
+- **Accurate Emulation**: Replicates the Gameboy hardware behavior *enough* for the experience you know and love
 - **Supported MBCs**: Compatible with games using:
     - MBC0 (ROM Only)
     - MBC1
@@ -90,6 +90,7 @@ dmg-acid2 passes, Blargg's cpu_instrs passes and some mooneye tests pass. Here a
 ```
 ## Limitations
 - **No Audio**: Top of my list to implement one day
+- **Not 100% Cycle Accurate**: There are still plenty of hardware quirks that can be added
 - **No Settings**: Every game will be a nice shade of blue unless you modify the code. There's no speeding it up - gotta play the old fashioned way!
 - **No GBC Support**: Who needs more than 4 shades of blue?
 
