@@ -93,7 +93,7 @@ dmg-acid2 passes, Blargg's cpu_instrs passes and some mooneye tests pass. Here a
 - **Not 100% Cycle Accurate**: There are still plenty of hardware quirks that can be added
 - **No Settings**: Every game will be a nice shade of blue unless you modify the code. There's no speeding it up - gotta play the old fashioned way!
 - **No GBC Support**: Who needs more than 4 shades of blue?
-- **No Saves**: You better have a really good run
+- **No Saves**: You better have a really good run!
 
 ## Special Thanks
 - Blargg for the [cpu_instrs](https://github.com/retrio/gb-test-roms) test ROMs
